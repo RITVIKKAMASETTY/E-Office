@@ -56,7 +56,7 @@ const Login = () => {
           admin: "/dashboard/admin",
           manager: "/dashboard/manager",
           employee: "/dashboard/employee",
-          supervisor: "/dashboard/supervisor",
+          supervisor: "/dashboard/teamlead",
         };
 
         const redirectPath = routes[data.role.toLowerCase()] || "/dashboard";
