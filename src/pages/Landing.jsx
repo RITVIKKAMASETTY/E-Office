@@ -4,6 +4,7 @@ import {
   CheckCircle, Menu, X, ChevronRight, Clock, FileText,
   Building2, Eye, ArrowRight, Activity
 } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,9 +83,11 @@ const LandingPage = () => {
               <button onClick={() => scrollToSection('vision')} className="text-[#1F2937] hover:text-[#004A9F] transition">Vision</button>
               <button onClick={() => scrollToSection('objectives')} className="text-[#1F2937] hover:text-[#004A9F] transition">Objectives</button>
               <button onClick={() => scrollToSection('impact')} className="text-[#1F2937] hover:text-[#004A9F] transition">Impact</button>
-              <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md">
-                Login
-              </button>
+             <Link to="/login">
+  <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md">
+    Login
+  </button>
+</Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -101,7 +104,11 @@ const LandingPage = () => {
               <button onClick={() => scrollToSection('vision')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Vision</button>
               <button onClick={() => scrollToSection('objectives')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Objectives</button>
               <button onClick={() => scrollToSection('impact')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Impact</button>
-              <button className="w-full bg-[#004A9F] text-white px-4 py-2 rounded-lg shadow-md">Login</button>
+              <Link to="/login">
+  <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md">
+    Login
+  </button>
+</Link>
             </div>
           )}
         </div>
@@ -122,10 +129,13 @@ const LandingPage = () => {
                 A data-driven performance management system for HQ and field staff under the e-Office platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button onClick={() => scrollToSection('objectives')} className="bg-[#004A9F] text-white px-8 py-3 rounded-lg hover:bg-[#003d82] transition flex items-center justify-center group shadow-lg">
-                  Get Started
-                  <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition" />
-                </button>
+      <Link
+      to="/login"
+      className="bg-[#004A9F] text-white px-8 py-3 rounded-lg hover:bg-[#003d82] transition flex items-center justify-center group shadow-lg"
+    >
+      Get Started
+      <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition" />
+    </Link>
                 <button onClick={() => scrollToSection('vision')} className="border-2 border-[#004A9F] text-[#004A9F] px-8 py-3 rounded-lg hover:bg-[#F5F7FA] transition">
                   Learn More
                 </button>
@@ -322,26 +332,6 @@ const LandingPage = () => {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-[#004A9F] to-[#00A3C4]">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Transform Your Department's Performance Today
-          </h2>
-          <p className="text-xl text-white opacity-90">
-            Join leading government organizations in the digital transformation journey
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-[#004A9F] px-8 py-3 rounded-lg hover:bg-[#FACC15] hover:text-[#1F2937] transition font-semibold shadow-lg">
-              Request Demo
-            </button>
-            <button className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-[#004A9F] transition font-semibold">
-              Join Pilot Program
-            </button>
           </div>
         </div>
       </section>

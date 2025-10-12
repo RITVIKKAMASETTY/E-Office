@@ -18,6 +18,7 @@
     "@tailwindcss/vite": "^4.0.14",
     "@tensorflow-models/handpose": "^0.1.0",
     "@tensorflow/tfjs": "^4.22.0",
+    "framer-motion": "^12.23.24",
     "lucide-react": "^0.513.0",
     "pdfjs-dist": "^5.3.31",
     "react": "^19.0.0",
