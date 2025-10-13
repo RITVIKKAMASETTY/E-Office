@@ -43,23 +43,44 @@ const Login = () => {
       });
 
       if (response.ok && data.token && data.username && data.role && data.department) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("username", data.username);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("department", data.department);
+        // Store all user data in localStorage
+        const userData = {
+          username: data.username,
+          role: data.role,
+          department: data.department,
+          email: data.email || data.username,
+          name: data.name || data.username
+        };
+
+        if (window.localStorage) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userData", JSON.stringify(userData));
+          localStorage.setItem("username", data.username);
+          localStorage.setItem("role", data.role);
+          localStorage.setItem("department", data.department);
+        }
         
-        console.log("login", data);
+        console.log("Login successful:", data);
+        console.log("User role:", data.role);
+        console.log("Role type:", typeof data.role);
         
         setSuccess(true);
 
+        // Role-based routing - normalize role to lowercase for comparison
+        const normalizedRole = data.role.toLowerCase().trim();
+        console.log("Normalized role:", normalizedRole);
+        
         const routes = {
           admin: "/dashboard/admin",
           manager: "/dashboard/manager",
           employee: "/dashboard/employee",
           supervisor: "/dashboard/teamlead",
+          teamlead: "/dashboard/teamlead", // Add alias
+          "team lead": "/dashboard/teamlead", // Add alias with space
         };
 
-        const redirectPath = routes[data.role.toLowerCase()] || "/dashboard";
+        const redirectPath = routes[normalizedRole] || "/dashboard";
+        console.log("Redirecting to:", redirectPath);
 
         setTimeout(() => {
           window.location.href = redirectPath;
@@ -250,7 +271,7 @@ const Login = () => {
               <p style={{ color: "#1F2937" }}>Sign in to your account</p>
             </motion.div>
 
-            <form onSubmit={handleLogin} className="space-y-6">
+            <div onSubmit={handleLogin} className="space-y-6">
               {error && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -336,6 +357,7 @@ const Login = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
+                onClick={handleLogin}
                 disabled={loading}
                 className="w-full py-3 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg"
                 style={{ 
@@ -354,7 +376,7 @@ const Login = () => {
                   "Sign In"
                 )}
               </motion.button>
-            </form>
+            </div>
 
             {/* Demo Credentials */}
             <div className="mt-8 pt-8 border-t" style={{ borderColor: "#E5E7EB" }}>
