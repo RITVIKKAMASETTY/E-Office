@@ -73,14 +73,13 @@ const Login = () => {
         const routes = {
           admin: "/dashboard/admin",
           manager: "/dashboard/manager",
-          employee: "/dashboard/employee",
-          supervisor: "/dashboard/teamlead",
-          teamlead: "/dashboard/teamlead", // Add alias
-          "team lead": "/dashboard/teamlead", // Add alias with space
+          member: "/dashboard/member",
+          teamleader: "/dashboard/teamlead", // Add alias
+          
         };
 
-        const redirectPath = routes[normalizedRole] || "/dashboard";
-        console.log("Redirecting to:", redirectPath);
+        const userRole = data.role === "Team Leader" ? "teamleader" : data.role.toLowerCase();
+        const redirectPath = routes[userRole];
 
         setTimeout(() => {
           window.location.href = redirectPath;
