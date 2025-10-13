@@ -2,7 +2,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import Landing from './pages/Landing';
 import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
-import TeamLeadDashboard from './components/employee/TeamLead';
+import TeamLeadDashboard from './components/teamlead/TeamLead';
 import EmployeeDashboard from './components/employee/EmployeeDashboard';
 
 export default function App() {
