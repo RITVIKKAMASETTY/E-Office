@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Upload, FileText, CheckCircle, Clock, AlertCircle, Plus, X, LogOut, User, Edit, Trash2, Calendar, Users, ChevronDown, ChevronRight } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_URL;
+const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
+const PINATA_API_SECRET = import.meta.env.VITE_PINATA_API_SECRET;
 
 const ManagerDashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -288,13 +290,43 @@ const ManagerDashboard = () => {
           status: 'pending',
           task_id: null
         });
+        alert('Subtask created successfully!');
       } else {
         const errorText = await response.text();
         console.error('Failed to create subtask:', response.status, errorText);
+        alert(`Failed to create subtask: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error creating subtask:', error);
     }
+  };
+
+  const uploadToPinata = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'pinata_api_key': PINATA_API_KEY,
+          'pinata_secret_api_key': PINATA_API_SECRET,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          ipfsHash: data.IpfsHash,
+          fileName: file.name,
+          fileSize: file.size,
+        };
+      }
+    } catch (error) {
+      console.error('Error uploading to Pinata:', error);
+    }
+    return null;
   };
 
   const updateTask = async (taskId, updates) => {
@@ -329,74 +361,109 @@ const ManagerDashboard = () => {
     }
   };
 
-  const uploadTaskDocument = async (file, taskTitle, description) => {
-    console.log('uploadTaskDocument called with:', { file: file.name, taskTitle, description });
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('task', taskTitle);
-    formData.append('description', description);
-
+  const uploadTaskDocument = async (file, taskId) => {
     try {
       const token = window.localStorage ? localStorage.getItem('token') : null;
-      console.log('Upload URL:', `${API_BASE_URL}/tasks/task-documents/`);
-      console.log('Upload token:', token);
-      setUploadProgress({ [file.name]: 0 });
+      setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
+
+      const pinataResult = await uploadToPinata(file);
+      if (!pinataResult) throw new Error('Pinata upload failed');
+
+      setUploadProgress(prev => ({ ...prev, [file.name]: 50 }));
+
+      const task = tasks.find(t => t.id === taskId);
+      const payload = {
+        task: task.title,
+        file: pinataResult.fileName,
+        description: `Document for ${task.title}`
+      };
+      
+      console.log('Payload being sent:', payload);
+      console.log('Token being used:', token);
+      console.log('API URL:', `${API_BASE_URL}/tasks/task-documents/`);
       
       const response = await fetch(`${API_BASE_URL}/tasks/task-documents/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Token ${token}`
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formData,
+        body: JSON.stringify(payload)
       });
 
-      console.log('Upload response status:', response.status);
-      
       if (response.ok) {
-        const result = await response.json();
-        console.log('Upload success:', result);
-        setUploadProgress({ [file.name]: 100 });
-        setTimeout(() => setUploadProgress({}), 2000);
+        setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+        setTimeout(() => setUploadProgress(prev => {
+          const updated = { ...prev };
+          delete updated[file.name];
+          return updated;
+        }), 2000);
         await fetchTaskDocuments();
-        return result;
+        return await response.json();
       } else {
         const errorText = await response.text();
         console.error('Upload failed:', response.status, errorText);
-        alert(`Upload failed: ${response.status} - Backend configuration issue`);
+        alert(`Upload failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error uploading document:', error);
-      setUploadProgress({});
+      setUploadProgress(prev => {
+        const updated = { ...prev };
+        delete updated[file.name];
+        return updated;
+      });
     }
   };
 
-  const uploadSubTaskDocument = async (file, subTaskTitle, description) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('sub_task', subTaskTitle);
-    formData.append('description', description);
-
+  const uploadSubTaskDocument = async (file, subTaskId) => {
     try {
       const token = window.localStorage ? localStorage.getItem('token') : null;
-      setUploadProgress({ [file.name]: 0 });
+      setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
+
+      const pinataResult = await uploadToPinata(file);
+      if (!pinataResult) throw new Error('Pinata upload failed');
+
+      setUploadProgress(prev => ({ ...prev, [file.name]: 50 }));
+
+      const subTask = subTasks.find(st => st.id === subTaskId);
+      const payload = {
+        task: subTask?.title,
+        file: pinataResult.fileName,
+        description: `Document for ${subTask?.title}`
+      };
+      
+      console.log('Subtask payload:', payload);
       
       const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/`, {
         method: 'POST',
         headers: {
-          'Authorization': `Token ${token}`
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formData,
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
-        setUploadProgress({ [file.name]: 100 });
-        setTimeout(() => setUploadProgress({}), 2000);
+        setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+        setTimeout(() => setUploadProgress(prev => {
+          const updated = { ...prev };
+          delete updated[file.name];
+          return updated;
+        }), 2000);
         await fetchSubTaskDocuments();
         return await response.json();
+      } else {
+        const errorText = await response.text();
+        console.error('Subtask upload failed:', response.status, errorText);
+        alert(`Subtask upload failed: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('Error uploading subtask document:', error);
-      setUploadProgress({});
+      console.error('Error uploading document:', error);
+      setUploadProgress(prev => {
+        const updated = { ...prev };
+        delete updated[file.name];
+        return updated;
+      });
     }
   };
 
@@ -412,7 +479,7 @@ const ManagerDashboard = () => {
     }
   }, [userData]);
 
-  const handleFileUpload = async (e, type, title) => {
+  const handleFileUpload = async (e, type, identifier) => {
     const files = Array.from(e.target.files);
     console.log('Files selected:', files);
     
@@ -425,11 +492,19 @@ const ManagerDashboard = () => {
       console.log('Uploading file:', file.name, 'size:', file.size, 'type:', file.type);
       try {
         if (type === 'task') {
-          const result = await uploadTaskDocument(file, title, `Document for ${title}`);
-          console.log('Upload result:', result);
+          const task = tasks.find(t => t.title === identifier);
+          if (!task) {
+            console.error('Task not found:', identifier);
+            continue;
+          }
+          await uploadTaskDocument(file, task.id);
         } else {
-          const result = await uploadSubTaskDocument(file, title, `Document for ${title}`);
-          console.log('Upload result:', result);
+          const subTask = subTasks.find(st => st.title === identifier);
+          if (!subTask) {
+            console.error('SubTask not found:', identifier);
+            continue;
+          }
+          await uploadSubTaskDocument(file, subTask.id);
         }
       } catch (error) {
         console.error('Upload failed for file:', file.name, error);
@@ -510,13 +585,6 @@ const ManagerDashboard = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold text-[#1F2937]">Task Management</h2>
-              <button
-                onClick={() => setShowCreateTask(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-[#004A9F] text-white rounded-lg hover:bg-[#003875] transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Task</span>
-              </button>
             </div>
 
             {loading ? (
@@ -603,18 +671,30 @@ const ManagerDashboard = () => {
                           <div className="mt-4 pt-4 border-t">
                             <h5 className="font-medium text-[#1F2937] mb-2">Task Documents</h5>
                             <div className="grid grid-cols-2 gap-2">
-                              {taskDocuments.filter(doc => doc.task === task.title).map((doc) => (
-                                <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                  <div className="flex items-center space-x-2">
+                              {taskDocuments.filter(doc => doc.task === task.title).map((doc) => {
+                                console.log('Document data:', doc);
+                                return (
+                                <div key={doc.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                                  <a
+                                    href={doc.ipfs_hash ? `https://gateway.pinata.cloud/ipfs/${doc.ipfs_hash}` : '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center space-x-2 cursor-pointer"
+                                    onClick={() => console.log('Clicked doc:', doc)}
+                                  >
                                     <FileText className="w-4 h-4 text-blue-600" />
-                                    <div>
-                                      <div className="text-sm font-medium">{doc.file}</div>
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-blue-600 hover:underline">{doc.name || doc.file}</div>
                                       <div className="text-xs text-gray-500">{doc.description}</div>
                                       <div className="text-xs text-gray-400">Uploaded: {formatDate(doc.uploaded_at)} by {doc.uploaded_by}</div>
+                                      {doc.ipfs_hash && (
+                                        <div className="text-xs text-blue-600 truncate">IPFS: {doc.ipfs_hash.substring(0, 10)}...</div>
+                                      )}
                                     </div>
-                                  </div>
+                                  </a>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -645,30 +725,28 @@ const ManagerDashboard = () => {
                                         )}
                                       </div>
                                     </div>
-                                    <label className="flex items-center space-x-1 px-2 py-1 text-gray-600 hover:text-[#00A3C4] transition-colors cursor-pointer border rounded text-xs">
-                                      <Upload className="w-3 h-3" />
-                                      <span>Add Docs</span>
-                                      <input
-                                        type="file"
-                                        multiple
-                                        className="hidden"
-                                        onChange={(e) => handleFileUpload(e, 'subtask', subTask.title)}
-                                      />
-                                    </label>
                                   </div>
                                   {subTaskDocs.length > 0 && (
                                     <div className="mt-3 pt-3 border-t">
                                       <div className="grid grid-cols-2 gap-2">
                                         {subTaskDocs.map((doc) => (
-                                          <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                            <div className="flex items-center space-x-2">
+                                          <div key={doc.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                                            <a
+                                              href={doc.ipfs_hash ? `https://gateway.pinata.cloud/ipfs/${doc.ipfs_hash}` : '#'}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center space-x-2 cursor-pointer"
+                                            >
                                               <FileText className="w-4 h-4 text-blue-600" />
-                                              <div>
-                                                <div className="text-sm font-medium">{doc.file}</div>
+                                              <div className="flex-1">
+                                                <div className="text-sm font-medium text-blue-600 hover:underline">{doc.name || doc.file}</div>
                                                 <div className="text-xs text-gray-500">{doc.description}</div>
                                                 <div className="text-xs text-gray-400">Uploaded: {formatDate(doc.uploaded_at)} by {doc.uploaded_by}</div>
+                                                {doc.ipfs_hash && (
+                                                  <div className="text-xs text-blue-600 truncate">IPFS: {doc.ipfs_hash.substring(0, 10)}...</div>
+                                                )}
                                               </div>
-                                            </div>
+                                            </a>
                                           </div>
                                         ))}
                                       </div>
