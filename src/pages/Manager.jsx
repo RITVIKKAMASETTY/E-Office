@@ -374,8 +374,8 @@ const ManagerDashboard = () => {
       const task = tasks.find(t => t.id === taskId);
       const payload = {
         task: task.title,
-        file: pinataResult.fileName,
-        description: `Document for ${task.title}`
+        file: `https://gateway.pinata.cloud/ipfs/${pinataResult.ipfsHash}`,
+        description: pinataResult.fileName
       };
       
       console.log('Payload being sent:', payload);
@@ -412,6 +412,26 @@ const ManagerDashboard = () => {
         delete updated[file.name];
         return updated;
       });
+    }
+  };
+
+  const deleteTaskDocument = async (docId) => {
+    try {
+      const token = window.localStorage ? localStorage.getItem('token') : null;
+      const response = await fetch(`${API_BASE_URL}/tasks/task-documents/${docId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Token ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        await fetchTaskDocuments();
+      } else {
+        console.error('Delete failed:', response.status);
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
     }
   };
 
@@ -676,7 +696,7 @@ const ManagerDashboard = () => {
                                 return (
                                 <div key={doc.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
                                   <a
-                                    href={doc.ipfs_hash ? `https://gateway.pinata.cloud/ipfs/${doc.ipfs_hash}` : '#'}
+                                    href={doc.file?.startsWith('http') ? doc.file : '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center space-x-2 cursor-pointer"
@@ -684,12 +704,11 @@ const ManagerDashboard = () => {
                                   >
                                     <FileText className="w-4 h-4 text-blue-600" />
                                     <div className="flex-1">
-                                      <div className="text-sm font-medium text-blue-600 hover:underline">{doc.name || doc.file}</div>
-                                      <div className="text-xs text-gray-500">{doc.description}</div>
+                                      <div className="text-sm font-medium text-blue-600 hover:underline">
+                                        {doc.file?.startsWith('http') ? doc.description || doc.file.split('/').pop() : doc.file || 'Document'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">Document for {task.title}</div>
                                       <div className="text-xs text-gray-400">Uploaded: {formatDate(doc.uploaded_at)} by {doc.uploaded_by}</div>
-                                      {doc.ipfs_hash && (
-                                        <div className="text-xs text-blue-600 truncate">IPFS: {doc.ipfs_hash.substring(0, 10)}...</div>
-                                      )}
                                     </div>
                                   </a>
                                 </div>
@@ -743,7 +762,7 @@ const ManagerDashboard = () => {
                                                 <div className="text-xs text-gray-500">{doc.description}</div>
                                                 <div className="text-xs text-gray-400">Uploaded: {formatDate(doc.uploaded_at)} by {doc.uploaded_by}</div>
                                                 {doc.ipfs_hash && (
-                                                  <div className="text-xs text-blue-600 truncate">IPFS: {doc.ipfs_hash.substring(0, 10)}...</div>
+                                                  <div className="text-xs text-blue-600">Stored on IPFS</div>
                                                 )}
                                               </div>
                                             </a>
