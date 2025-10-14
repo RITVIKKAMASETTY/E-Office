@@ -83,6 +83,11 @@ const LandingPage = () => {
               <button onClick={() => scrollToSection('vision')} className="text-[#1F2937] hover:text-[#004A9F] transition">Vision</button>
               <button onClick={() => scrollToSection('objectives')} className="text-[#1F2937] hover:text-[#004A9F] transition">Objectives</button>
               <button onClick={() => scrollToSection('impact')} className="text-[#1F2937] hover:text-[#004A9F] transition">Impact</button>
+              <Link to="/maps">
+    <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md">
+      View Maps
+    </button>
+  </Link>
              <Link to="/login">
   <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md">
     Login
@@ -98,18 +103,51 @@ const LandingPage = () => {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-            <div className="md:hidden bg-white border-t py-4 space-y-3">
-              <button onClick={() => scrollToSection('home')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Home</button>
-              <button onClick={() => scrollToSection('features')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Features</button>
-              <button onClick={() => scrollToSection('vision')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Vision</button>
-              <button onClick={() => scrollToSection('objectives')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Objectives</button>
-              <button onClick={() => scrollToSection('impact')} className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]">Impact</button>
-              <Link to="/login">
-  <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md">
-    Login
+           <div className="md:hidden bg-white border-t py-4 space-y-3">
+  <button
+    onClick={() => scrollToSection('home')}
+    className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]"
+  >
+    Home
   </button>
-</Link>
-            </div>
+  <button
+    onClick={() => scrollToSection('features')}
+    className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]"
+  >
+    Features
+  </button>
+  <button
+    onClick={() => scrollToSection('vision')}
+    className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]"
+  >
+    Vision
+  </button>
+  <button
+    onClick={() => scrollToSection('objectives')}
+    className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]"
+  >
+    Objectives
+  </button>
+  <button
+            onClick={() => scrollToSection("impact")}
+            className="block w-full text-left px-4 py-2 hover:bg-[#F5F7FA] text-[#1F2937]"
+          >
+            Impact
+          </button>
+
+          <Link to="/maps">
+            <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md w-full">
+              View Maps
+            </button>
+          </Link>
+
+          <Link to="/login">
+            <button className="bg-[#004A9F] text-white px-6 py-2 rounded-lg hover:bg-[#003d82] transition shadow-md w-full">
+              Login
+            </button>
+          </Link>
+</div>
+
           )}
         </div>
       </nav>
