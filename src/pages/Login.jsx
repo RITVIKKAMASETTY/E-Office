@@ -141,11 +141,13 @@ const Login = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ 
-            backgroundImage: 'url(/metro-bg.jpg)',
-            filter: 'brightness(0.7)'
+            backgroundImage: 'url(/login-bg.jpeg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
           }}
         ></div>
-        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 74, 159, 0.1)' }}></div>
+        <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}></div>
         <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-r from-transparent" style={{ background: 'linear-gradient(to right, transparent, #F5F7FA)' }}></div>
         
         <motion.div
@@ -154,6 +156,15 @@ const Login = () => {
           transition={{ duration: 1, ease: "easeOut" }}
           className="relative z-10 text-center"
         >
+          <motion.div
+            className="text-center mb-8"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
+           
+          </motion.div>
+          
           <motion.h1 
             className="text-6xl font-bold mb-4 text-white" 
             style={{ 
@@ -162,20 +173,14 @@ const Login = () => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ 
               opacity: 1, 
-              scale: 1,
-              textShadow: [
-                '0 0 20px rgba(255,255,255,0.5)',
-                '0 0 30px rgba(255,255,255,0.8)',
-                '0 0 20px rgba(255,255,255,0.5)'
-              ]
+              scale: 1
             }}
             transition={{ 
               duration: 0.8, 
-              delay: 0.3,
-              textShadow: { duration: 3, repeat: Infinity }
+              delay: 0.3
             }}
           >
-            Dashboard
+            Karyamitra
           </motion.h1>
           <motion.p 
             className="text-xl mb-6 text-white" 
@@ -192,8 +197,10 @@ const Login = () => {
               delay: 0.6
             }}
           >
-            Secure Access Portal
+            Digital Workflow Management
           </motion.p>
+          
+
           
           <div className="flex justify-center">
             <motion.div
@@ -261,13 +268,80 @@ const Login = () => {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-center mb-8"
+              className="text-center mb-6"
             >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "#004A9F" }}>
+                <span className="text-2xl text-white">🔐</span>
+              </div>
               <h2 className="text-3xl font-bold mb-2" style={{ color: "#004A9F" }}>
                 Welcome Back
               </h2>
-              <p style={{ color: "#1F2937" }}>Sign in to your account</p>
+              <p style={{ color: "#1F2937" }}>Sign in to your E-Office account</p>
             </motion.div>
+
+            {/* Test Login Credentials - Moved to top */}
+            <div className="mb-8 pb-6 border-b" style={{ borderColor: "#E5E7EB" }}>
+              <div className="flex items-center justify-center mb-4">
+                <div className="flex items-center space-x-2 px-3 py-1 rounded-full" style={{ backgroundColor: "#DBEAFE" }}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10B981" }}></div>
+                  <span className="text-xs font-medium" style={{ color: "#1E40AF" }}>Test Login Credentials</span>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Admin Access */}
+                <div className="flex items-center justify-between p-3 rounded-lg border-l-4" style={{ backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#F59E0B" }}>
+                      <span className="text-white text-xs font-bold">👑</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: "#92400E" }}>Admin Access</div>
+                      <div className="text-xs" style={{ color: "#A16207" }}>Username: shetty | Password: 7760</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Manager */}
+                <div className="flex items-center justify-between p-3 rounded-lg border-l-4" style={{ backgroundColor: "#DBEAFE", borderColor: "#3B82F6" }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#3B82F6" }}>
+                      <span className="text-white text-xs font-bold">🔧</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: "#1E40AF" }}>Manager</div>
+                      <div className="text-xs" style={{ color: "#2563EB" }}>Username: aradhya | Password: sakshi@123</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Team Lead */}
+                <div className="flex items-center justify-between p-3 rounded-lg border-l-4" style={{ backgroundColor: "#F3E8FF", borderColor: "#8B5CF6" }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#8B5CF6" }}>
+                      <span className="text-white text-xs font-bold">👥</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: "#6B21A8" }}>Team Lead</div>
+                      <div className="text-xs" style={{ color: "#7C3AED" }}>Username: sakshi | Password: sathwik@123</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employee */}
+                <div className="flex items-center justify-between p-3 rounded-lg border-l-4" style={{ backgroundColor: "#DCFCE7", borderColor: "#10B981" }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#10B981" }}>
+                      <span className="text-white text-xs font-bold">👤</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: "#047857" }}>Employee</div>
+                      <div className="text-xs" style={{ color: "#059669" }}>Username: sathwik | Password: khush@123</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div onSubmit={handleLogin} className="space-y-6">
               {error && (
@@ -376,17 +450,7 @@ const Login = () => {
               </motion.button>
             </div>
 
-            {/* Demo Credentials */}
-            <div className="mt-8 pt-8 border-t" style={{ borderColor: "#E5E7EB" }}>
-              <p className="text-center text-sm" style={{ color: "#6B7280" }}>
-                Demo credentials:
-              </p>
-              <p className="text-center text-xs mt-2" style={{ color: "#9CA3AF" }}>
-                Username: <span style={{ color: "#004A9F", fontWeight: "bold" }}>sathwik</span>
-                <br />
-                Password: <span style={{ color: "#004A9F", fontWeight: "bold" }}>khush@123</span>
-              </p>
-            </div>
+
           </div>
 
           {/* Info Box */}
