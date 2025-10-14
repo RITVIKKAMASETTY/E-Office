@@ -20,8 +20,8 @@ const TeamLeadDashboard = () => {
   const [authError, setAuthError] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [taskDocuments, setTaskDocuments] = useState({});
-  const [documentDescription, setDocumentDescription] = useState('');
-  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [documentDescriptions, setDocumentDescriptions] = useState({});
+  const [showDocumentUpload, setShowDocumentUpload] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -184,15 +184,19 @@ const TeamLeadDashboard = () => {
       const headers = getAuthHeaders();
       if (!headers) return [];
 
-      const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/${subTaskId}/`, {
+      console.log('Fetching documents for subtask:', subTaskId);
+      const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/`, {
         headers: headers
       });
 
       if (handleAuthError(response)) return [];
 
       if (response.ok) {
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        const allDocs = await response.json();
+        console.log('All subtask documents:', allDocs);
+        const filteredDocs = Array.isArray(allDocs) ? allDocs.filter(doc => doc.task === subTaskId) : [];
+        console.log('Filtered documents for subtask', subTaskId, ':', filteredDocs);
+        return filteredDocs;
       }
       return [];
     } catch (error) {
@@ -282,15 +286,15 @@ const TeamLeadDashboard = () => {
 
       setUploadProgress(prev => ({ ...prev, [file.name]: 50 }));
 
-      const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/`, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-          task: subTaskId,
-          file: pinataUrl,
-          description: description || '',
-        }),
-      });
+    const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        task: subTaskId,
+        file: pinataUrl,
+        description: description || '',
+      }),
+    });
 
       console.log('Upload response:', response.status, response.statusText);
 
@@ -320,21 +324,21 @@ const TeamLeadDashboard = () => {
           return updated;
         }), 2000);
 
-        const docs = await fetchSubTaskDocuments(subTaskId);
-        setDocuments(docs);
-        setDocumentDescription('');
-        setShowDocumentUpload(false);
-        return await response.json();
-      }
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      setUploadProgress(prev => {
-        const updated = { ...prev };
-        delete updated[file.name];
-        return updated;
-      });
+      const docs = await fetchSubTaskDocuments(subTaskId);
+      setDocuments(docs);
+      setDocumentDescriptions(prev => ({ ...prev, [subTaskId]: '' }));
+      setShowDocumentUpload(prev => ({ ...prev, [subTaskId]: false }));
+      return await response.json();
     }
-  };
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    setUploadProgress(prev => {
+      const updated = { ...prev };
+      delete updated[file.name];
+      return updated;
+    });
+  }
+};
 
   const uploadTaskDocument = async (taskId, file) => {
     try {
@@ -466,7 +470,7 @@ const TeamLeadDashboard = () => {
     
     for (const file of files) {
       if (type === 'subtask') {
-        await uploadSubTaskDocument(id, file, documentDescription);
+        await uploadSubTaskDocument(id, file, documentDescriptions[id] || '');
       } else {
         await uploadTaskDocument(id, file);
       }
@@ -507,47 +511,39 @@ const TeamLeadDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]" style={{ fontFamily: "'Noto Sans', sans-serif" }}>
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-[#004A9F] rounded-xl flex items-center justify-center shadow-md">
-                  <Target className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-[#1F2937]">ProjectFlow</h1>
-                  <p className="text-sm text-gray-500">Team Lead Dashboard</p>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Team Lead Dashboard</h1>
+                <p className="text-sm text-gray-500">Manage tasks and assignments</p>
               </div>
             </div>
 
             {userData && (
               <div className="flex items-center space-x-4">
-                <div className="hidden sm:flex items-center space-x-3 px-4 py-2 bg-gray-50 rounded-xl">
-                  <div className="w-8 h-8 bg-[#00A3C4] rounded-lg flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-[#1F2937]">{userData.name || userData.email || userData.username}</p>
-                    <p className="text-xs text-gray-500">Team Lead</p>
-                  </div>
+                <div className="flex items-center space-x-2 px-4 py-2 bg-gray-100 rounded-lg">
+                  <User className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">{userData.name || userData.email || userData.username}</span>
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Team Lead</span>
                 </div>
-                
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="text-sm font-medium hidden sm:block">Logout</span>
+                  <span className="font-medium">Logout</span>
                 </button>
               </div>
             )}
           </div>
         </div>
-      </header>
+      </nav>
 
       {/* Auth Error Alert */}
       {authError && (
@@ -565,186 +561,173 @@ const TeamLeadDashboard = () => {
       <main className="max-w-7xl mx-auto p-6">
         {!userData ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#004A9F]"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            {/* Sidebar - Subtasks Panel */}
-            <div className="xl:col-span-1 space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-[#1F2937] flex items-center">
-                    <FileText className="w-5 h-5 mr-2 text-[#004A9F]" />
-                    Sub-Tasks
-                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                      {subTasks.length}
-                    </span>
-                  </h2>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  Sub-Tasks
+                  <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                    {subTasks.length}
+                  </span>
+                </h2>
+              </div>
 
-                {/* Search and Filter */}
-                <div className="space-y-3 mb-4">
-                  <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search tasks..."
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#004A9F] focus:border-transparent bg-gray-50 text-sm"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  
-                  <select
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#004A9F] focus:border-transparent bg-gray-50 text-sm"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
+              {/* Search and Filter */}
+              <div className="space-y-3 mb-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search tasks..."
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-gray-50 text-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-
-                {/* Subtasks List */}
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#004A9F]"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
-                    {filteredSubTasks.length > 0 ? (
-                      filteredSubTasks.map(subTask => (
-                        <div 
-                          key={subTask.id} 
-                          className={`border rounded-xl transition-all duration-200 ${
-                            selectedSubTask?.id === subTask.id 
-                              ? 'border-[#004A9F] bg-blue-50 shadow-sm' 
-                              : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                          }`}
+                
+                <select
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-gray-50 text-sm"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto">
+                  {filteredSubTasks.length > 0 ? (
+                    filteredSubTasks.map(subTask => (
+                      <div 
+                        key={subTask.id} 
+                        className={`border rounded-xl transition-all duration-200 ${
+                          selectedSubTask?.id === subTask.id 
+                            ? 'border-blue-600 bg-blue-50 shadow-sm' 
+                            : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        }`}
+                      >
+                        <div
+                          className="p-4 cursor-pointer"
+                          onClick={() => toggleSubTask(subTask)}
                         >
-                          <div
-                            className="p-4 cursor-pointer"
-                            onClick={() => toggleSubTask(subTask)}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start flex-1 min-w-0">
-                                {expandedSubTasks[subTask.id] ? (
-                                  <ChevronDown className="w-4 h-4 mr-3 mt-1 text-gray-500 flex-shrink-0" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 mr-3 mt-1 text-gray-500 flex-shrink-0" />
-                                )}
-                                <div className="min-w-0 flex-1">
-                                  <h3 className="font-semibold text-[#1F2937] text-sm leading-tight truncate">
-                                    {subTask.name || `Sub-Task #${subTask.id}`}
-                                  </h3>
-                                  <p className="text-gray-600 text-xs mt-1 line-clamp-2">
-                                    {subTask.description?.substring(0, 80)}...
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(subTask.status)}`}>
-                                      {subTask.status?.replace('_', ' ')}
-                                    </span>
-                                  </div>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start flex-1 min-w-0">
+                              {expandedSubTasks[subTask.id] ? (
+                                <ChevronDown className="w-4 h-4 mr-3 mt-1 text-gray-500 flex-shrink-0" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 mr-3 mt-1 text-gray-500 flex-shrink-0" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-semibold text-gray-800 text-sm leading-tight truncate">
+                                  {subTask.name || `Sub-Task #${subTask.id}`}
+                                </h3>
+                                <p className="text-gray-600 text-xs mt-1 line-clamp-2">
+                                  {subTask.description?.substring(0, 80)}...
+                                </p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(subTask.status)}`}>
+                                    {subTask.status?.replace('_', ' ')}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          
-                          {expandedSubTasks[subTask.id] && (
-                            <div className="bg-gray-50 p-4 border-t border-gray-200 space-y-3 rounded-b-xl">
-                              {!showDocumentUpload ? (
-                                <button
-                                  onClick={() => setShowDocumentUpload(true)}
-                                  className="w-full flex items-center justify-center px-4 py-2.5 bg-[#004A9F] text-white rounded-lg hover:bg-[#003882] transition-colors text-sm font-medium shadow-sm"
-                                >
-                                  <Upload className="w-4 h-4 mr-2" />
-                                  Upload Document
-                                </button>
-                              ) : (
-                                <div className="space-y-3">
-                                  <textarea
-                                    placeholder="Enter document description..."
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#004A9F] focus:border-transparent text-sm bg-white"
-                                    rows="2"
-                                    value={documentDescription}
-                                    onChange={(e) => setDocumentDescription(e.target.value)}
-                                  />
-                                  <div className="flex gap-2">
-                                    <label className="flex-1 flex items-center justify-center px-4 py-2 bg-[#004A9F] text-white rounded-lg hover:bg-[#003882] cursor-pointer transition-colors text-sm font-medium">
-                                      <Upload className="w-4 h-4 mr-2" />
-                                      Choose File
-                                      <input
-                                        type="file"
-                                        multiple
-                                        className="hidden"
-                                        onChange={(e) => handleFileUpload(e, 'subtask', subTask.id)}
-                                        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-                                      />
-                                    </label>
-                                    <button
-                                      onClick={() => {
-                                        setShowDocumentUpload(false);
-                                        setDocumentDescription('');
-                                      }}
-                                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 text-sm">No sub-tasks found</p>
-                        {searchTerm && (
-                          <button 
-                            onClick={() => setSearchTerm('')}
-                            className="text-[#004A9F] text-sm font-medium mt-2 hover:text-[#003882]"
-                          >
-                            Clear search
-                          </button>
+                        
+                        {expandedSubTasks[subTask.id] && (
+                          <div className="bg-gray-50 p-4 border-t border-gray-200 space-y-3 rounded-b-xl">
+                            {!showDocumentUpload[subTask.id] ? (
+                              <button
+                                onClick={() => setShowDocumentUpload(prev => ({ ...prev, [subTask.id]: true }))}
+                                className="w-full flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
+                              >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Upload Document
+                              </button>
+                            ) : (
+                              <div className="space-y-3">
+                                <textarea
+                                  placeholder="Enter document description..."
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm bg-white"
+                                  rows="2"
+                                  value={documentDescriptions[subTask.id] || ''}
+                                  onChange={(e) => setDocumentDescriptions(prev => ({ ...prev, [subTask.id]: e.target.value }))}
+                                />
+                                <div className="flex gap-2">
+                                  <label className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors text-sm font-medium">
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Choose File
+                                    <input
+                                      type="file"
+                                      multiple
+                                      className="hidden"
+                                      onChange={(e) => handleFileUpload(e, 'subtask', subTask.id)}
+                                      accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                                    />
+                                  </label>
+                                  <button
+                                    onClick={() => {
+                                      setShowDocumentUpload(prev => ({ ...prev, [subTask.id]: false }));
+                                      setDocumentDescriptions(prev => ({ ...prev, [subTask.id]: '' }));
+                                    }}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">No sub-tasks found</p>
+                      {searchTerm && (
+                        <button 
+                          onClick={() => setSearchTerm('')}
+                          className="text-blue-600 text-sm font-medium mt-2 hover:text-blue-700"
+                        >
+                          Clear search
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Main Content */}
-            <div className="xl:col-span-3 space-y-6">
+            <div className="lg:col-span-2 space-y-6">
               {selectedSubTask ? (
                 <>
-                  {/* Documents Section */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg font-semibold text-[#1F2937] flex items-center">
-                        <FileText className="w-5 h-5 mr-2 text-[#004A9F]" />
-                        Documents
-                        <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                          {documents.length}
-                        </span>
-                      </h2>
-                    </div>
-
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <h2 className="text-xl font-semibold mb-4">Documents</h2>
                     {documents.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {documents.map(doc => (
-                          <div key={doc.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-white">
-                            <FileText className="w-8 h-8 text-[#004A9F] mb-3" />
-                            <div className="space-y-2">
-                              <p className="font-medium text-[#1F2937] text-sm truncate">{doc.name || 'Document'}</p>
-                              <p className="text-gray-500 text-xs">{doc.uploaded_at || 'Just now'}</p>
-                              {doc.ipfs_hash && (
-                                <p className="text-[#00A3C4] text-xs font-mono truncate">IPFS: {doc.ipfs_hash.substring(0, 12)}...</p>
-                              )}
+                          <div 
+                            key={doc.id} 
+                            className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                            onClick={() => window.open(doc.file, '_blank')}
+                          >
+                            <FileText className="w-8 h-8 text-blue-600 mr-3 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-blue-600 hover:text-blue-800 truncate">{doc.description || 'Document'}</p>
+                              <p className="text-sm text-gray-500">{new Date(doc.uploaded_at).toLocaleDateString()}</p>
                             </div>
                           </div>
                         ))}
@@ -761,16 +744,16 @@ const TeamLeadDashboard = () => {
                     
                     {Object.keys(uploadProgress).length > 0 && (
                       <div className="mt-6 space-y-3">
-                        <h4 className="text-sm font-medium text-[#1F2937]">Upload Progress</h4>
+                        <h4 className="text-sm font-medium text-gray-800">Upload Progress</h4>
                         {Object.entries(uploadProgress).map(([name, progress]) => (
                           <div key={name} className="bg-gray-50 rounded-lg p-3">
                             <div className="flex justify-between text-sm mb-2">
-                              <span className="font-medium text-[#1F2937] truncate">{name}</span>
-                              <span className="font-semibold text-[#004A9F]">{progress}%</span>
+                              <span className="font-medium text-gray-800 truncate">{name}</span>
+                              <span className="font-semibold text-blue-600">{progress}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className="bg-[#004A9F] h-2 rounded-full transition-all duration-300"
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${progress}%` }}
                               ></div>
                             </div>
@@ -780,19 +763,12 @@ const TeamLeadDashboard = () => {
                     )}
                   </div>
 
-                  {/* Individual Tasks Section */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg font-semibold text-[#1F2937] flex items-center">
-                        <Users className="w-5 h-5 mr-2 text-[#004A9F]" />
-                        Individual Tasks
-                        <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                          {individualTasks.length}
-                        </span>
-                      </h2>
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-semibold">Individual Tasks ({individualTasks.length})</h2>
                       <button
                         onClick={() => setShowCreateTask(!showCreateTask)}
-                        className="flex items-center px-4 py-2.5 bg-[#00A3C4] text-white rounded-lg hover:bg-[#0089a8] transition-colors shadow-sm text-sm font-medium"
+                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Create Task
@@ -801,9 +777,9 @@ const TeamLeadDashboard = () => {
 
                     {/* Create Task Form */}
                     {showCreateTask && (
-                      <div className="mb-6 p-6 border-2 border-[#00A3C4] rounded-xl bg-[#f0f9ff]">
+                      <div className="mb-6 p-6 border-2 border-blue-500 rounded-xl bg-blue-50">
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="font-semibold text-[#1F2937] text-lg">Create New Task</h3>
+                          <h3 className="font-semibold text-gray-800 text-lg">Create New Task</h3>
                           <button 
                             onClick={() => setShowCreateTask(false)}
                             className="p-1 hover:bg-white rounded-lg transition-colors"
@@ -815,20 +791,20 @@ const TeamLeadDashboard = () => {
                           <input
                             type="text"
                             placeholder="Task Title"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00A3C4] focus:border-transparent bg-white"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                             value={newTask.title}
                             onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                           />
                           <textarea
                             placeholder="Description"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00A3C4] focus:border-transparent bg-white"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                             rows="3"
                             value={newTask.description}
                             onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                           />
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <select
-                              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00A3C4] focus:border-transparent bg-white"
+                              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                               value={newTask.assigned_to}
                               onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
                             >
@@ -843,7 +819,7 @@ const TeamLeadDashboard = () => {
                               <Calendar className="w-4 h-4 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
                               <input
                                 type="date"
-                                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00A3C4] focus:border-transparent bg-white"
+                                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                                 value={newTask.due_date}
                                 onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                               />
@@ -851,7 +827,7 @@ const TeamLeadDashboard = () => {
                           </div>
                           <div className="flex gap-3">
                             <select
-                              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00A3C4] focus:border-transparent bg-white"
+                              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                               value={newTask.priority}
                               onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                             >
@@ -861,7 +837,7 @@ const TeamLeadDashboard = () => {
                             </select>
                             <button
                               onClick={createIndividualTask}
-                              className="px-8 py-3 bg-[#00A3C4] text-white rounded-xl hover:bg-[#0089a8] transition-colors font-semibold shadow-sm"
+                              className="px-8 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-sm"
                             >
                               Create Task
                             </button>
@@ -877,7 +853,7 @@ const TeamLeadDashboard = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between mb-2">
-                                <h3 className="font-semibold text-[#1F2937] text-lg pr-4">{task.title}</h3>
+                                <h3 className="font-semibold text-gray-800 text-lg pr-4">{task.title}</h3>
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)} flex-shrink-0`}>
                                   {task.priority} priority
                                 </span>
@@ -911,7 +887,7 @@ const TeamLeadDashboard = () => {
                                   <button
                                     key={doc.id}
                                     onClick={() => window.open(`https://gateway.pinata.cloud/ipfs/${doc.file}`, '_blank')}
-                                    className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-[#004A9F] rounded-lg hover:bg-blue-100 cursor-pointer text-xs font-medium transition-colors"
+                                    className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 cursor-pointer text-xs font-medium transition-colors"
                                   >
                                     <FileText className="w-3 h-3 mr-1.5" />
                                     {doc.name || 'Document'}
@@ -934,7 +910,7 @@ const TeamLeadDashboard = () => {
                           </p>
                           <button
                             onClick={() => setShowCreateTask(true)}
-                            className="inline-flex items-center px-6 py-3 bg-[#00A3C4] text-white rounded-lg hover:bg-[#0089a8] transition-colors font-medium shadow-sm"
+                            className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-sm"
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Create Your First Task
@@ -952,7 +928,7 @@ const TeamLeadDashboard = () => {
                   <p className="text-gray-600 max-w-md mx-auto mb-8 leading-relaxed">
                     Choose a sub-task from the left panel to view detailed information, manage documents, and create individual tasks for your team members.
                   </p>
-                  <div className="w-12 h-1 bg-[#004A9F] rounded-full mx-auto"></div>
+                  <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto"></div>
                 </div>
               )}
             </div>
