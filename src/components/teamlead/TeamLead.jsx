@@ -17,82 +17,84 @@ const TeamLeadDashboard = () => {
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [expandedSubTasks, setExpandedSubTasks] = useState({});
   const [authError, setAuthError] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [taskDocuments, setTaskDocuments] = useState({});
 
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
-    assignee: '',
-    dueDate: '',
+    assigned_to: '',
+    due_Date: '',
     priority: 'medium',
     status: 'pending'
   });
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
-    const token = window.localStorage ? localStorage.getItem('token') : null;
+    const token = localStorage.getItem('token');
     
     if (!token) {
       console.error('No token found in localStorage');
-      console.log('All localStorage keys:', Object.keys(localStorage));
-      setAuthError('Authentication token not found. Please login again.');
       return null;
     }
 
-    console.log('Full token:', token);
-    console.log('Token length:', token.length);
-    console.log('Token starts with:', token.substring(0, 30));
+    console.log('Token found, length:', token.length);
     
-    // Try without "Bearer" prefix first - some backends expect just the token
+    // Return headers with token
     return {
-      'Authorization': token,
+      'Authorization': `token ${token}`,
       'Content-Type': 'application/json'
     };
   };
 
   useEffect(() => {
     const checkAuth = () => {
-      const token = window.localStorage ? localStorage.getItem('token') : null;
-      const user = window.localStorage ? localStorage.getItem('userData') : null;
+      const token = localStorage.getItem('token');
+      const userDataStr = localStorage.getItem('userData');
       
-      if (!token || !user) {
+      if (!token || !userDataStr) {
         console.error('Missing authentication data');
         window.location.href = '/login';
         return;
       }
 
-      const parsedUser = JSON.parse(user);
-      console.log('User data:', parsedUser);
-      console.log('Token exists:', !!token);
-      
-      if (parsedUser.role !== 'Team Leader' && parsedUser.role !== 'teamleader') {
-        console.log('Role mismatch, redirecting. User role:', parsedUser.role);
-        const roleRoutes = {
-          admin: '/dashboard/admin',
-          manager: '/dashboard/manager',
-          member: '/dashboard/member'
-        };
-        const userRole = parsedUser.role.toLowerCase();
-        window.location.href = roleRoutes[userRole] || '/login';
-        return;
+      try {
+        const parsedUser = JSON.parse(userDataStr);
+        console.log('User data:', parsedUser);
+        console.log('Token exists:', !!token);
+        
+        if (parsedUser.role !== 'Team Leader') {
+          const roleRoutes = {
+            admin: '/dashboard/admin',
+            manager: '/dashboard/manager',
+            member: '/dashboard/member',
+            teamleader: '/dashboard/teamlead'
+          };
+          const userRole = parsedUser.role === "Team Leader" ? "teamleader" : parsedUser.role.toLowerCase();
+          window.location.href = roleRoutes[userRole] || '/dashboard';
+          return;
+        }
+        setUserData(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        window.location.href = '/login';
       }
-      setUserData(parsedUser);
     };
     checkAuth();
   }, []);
 
   const handleLogout = () => {
-    if (window.localStorage) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('username');
-      localStorage.removeItem('role');
-      localStorage.removeItem('department');
-    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+    localStorage.removeItem('department');
     window.location.href = '/login';
   };
 
   const handleAuthError = (response) => {
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
+      console.error('Authentication failed:', response.status);
       setAuthError('Session expired. Please login again.');
       setTimeout(() => {
         handleLogout();
@@ -137,6 +139,8 @@ const TeamLeadDashboard = () => {
     try {
       const headers = getAuthHeaders();
       if (!headers) {
+        setAuthError('Authentication token not found. Please login again.');
+        setTimeout(() => handleLogout(), 2000);
         setLoading(false);
         return;
       }
@@ -148,7 +152,8 @@ const TeamLeadDashboard = () => {
         headers: headers
       });
 
-      console.log('Sub-tasks response status:', response.status);
+
+      console.log('Sub-tasks response status:', response.data, response.status, response.statusText );
 
       if (handleAuthError(response)) {
         setLoading(false);
@@ -162,11 +167,14 @@ const TeamLeadDashboard = () => {
       } else {
         const errorText = await response.text();
         console.error('Error response:', errorText);
-        setAuthError(`Failed to fetch sub-tasks: ${response.status} ${response.statusText}`);
+        
+        // Don't show generic errors as auth errors
+        console.log(`Failed to fetch sub-tasks: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching sub-tasks:', error);
-      setAuthError(`Network error: ${error.message}`);
+      // Network errors shouldn't trigger auth failure
+      console.log(`Network error: ${error.message}`);
     }
     setLoading(false);
   };
@@ -207,9 +215,57 @@ const TeamLeadDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setIndividualTasks(Array.isArray(data) ? data : []);
+        
+        // Fetch documents for each task
+        for (const task of data) {
+          await fetchIndividualTaskDocuments(task.id);
+        }
       }
     } catch (error) {
       console.error('Error fetching individual tasks:', error);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const response = await fetch(`${API_BASE_URL}/teams/members/`, {
+        headers: headers
+      });
+
+      if (handleAuthError(response)) return;
+
+      if (response.ok) {
+        const data = await response.json();
+        setTeamMembers(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+    }
+  };
+
+  const fetchIndividualTaskDocuments = async (taskId) => {
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) return;
+
+      const response = await fetch(`${API_BASE_URL}/individual-task-documents/task/${taskId}/`, {
+        headers: headers
+      });
+
+      if (handleAuthError(response)) return;
+
+      if (response.ok) {
+        const data = await response.json();
+        setTaskDocuments(prev => ({
+          ...prev,
+          [taskId]: Array.isArray(data) ? data : []
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching task documents:', error);
     }
   };
 
@@ -229,7 +285,7 @@ const TeamLeadDashboard = () => {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
-          sub_task_id: subTaskId,
+          sub_task: subTaskId,
           name: pinataResult.fileName,
           ipfs_hash: pinataResult.ipfsHash,
           file_size: pinataResult.fileSize,
@@ -319,44 +375,67 @@ const TeamLeadDashboard = () => {
   };
 
   const createIndividualTask = async () => {
-    if (!selectedSubTask) return;
+  if (!selectedSubTask) return;
 
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    console.log("Creating individual task with data:", {
+      ...newTask,
+      sub_task: selectedSubTask?.id,
+    });
+
+    const response = await fetch(`${API_BASE_URL}/individual-tasks/`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        ...newTask,
+        sub_task: selectedSubTask.title,
+      }),
+    });
+
+    console.log("Response status:", response.status);
+
+    // Clone and log the response text to inspect backend error details
+    const responseText = await response.text();
+    console.log("Response body:", responseText);
+
+    // Try to parse it as JSON (if possible)
+    let responseData;
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await fetch(`${API_BASE_URL}/individual-tasks/`, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-          ...newTask,
-          sub_task_id: selectedSubTask.id
-        })
-      });
-
-      if (handleAuthError(response)) return;
-
-      if (response.ok) {
-        const createdTask = await response.json();
-        setIndividualTasks([...individualTasks, createdTask]);
-        setShowCreateTask(false);
-        setNewTask({
-          title: '',
-          description: '',
-          assignee: '',
-          dueDate: '',
-          priority: 'medium',
-          status: 'pending'
-        });
-      }
-    } catch (error) {
-      console.error('Error creating task:', error);
+      responseData = JSON.parse(responseText);
+    } catch {
+      responseData = { raw: responseText };
     }
-  };
+
+    if (handleAuthError(response)) return;
+
+    if (response.ok) {
+      console.log("Task created successfully:", responseData);
+      setIndividualTasks([...individualTasks, responseData]);
+      setShowCreateTask(false);
+      setNewTask({
+        title: '',
+        description: '',
+        assigned_to: '',
+        due_date: '',
+        status: 'pending',
+        sub_task: selectedSubTask.id,
+      });
+    } else {
+      console.error("Failed to create task:", response.status, responseData);
+    }
+  } catch (error) {
+    console.error('Error creating task:', error);
+  }
+};
+
 
   useEffect(() => {
     if (userData) {
       fetchSubTasks();
+      fetchTeamMembers();
     }
   }, [userData]);
 
@@ -596,40 +675,26 @@ const TeamLeadDashboard = () => {
                             onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                           />
                           <div className="grid grid-cols-2 gap-3">
-                            <input
-                              type="text"
-                              placeholder="Assignee"
+                            <select
                               className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              value={newTask.assignee}
-                              onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-                            />
+                              value={newTask.assigned_to}
+                              onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
+                            >
+                              <option value="">Select assigned_to</option>
+                              {teamMembers.map(member => (
+                                <option key={member.id} value={member.id}>
+                                  {member.user}
+                                </option>
+                              ))}
+                            </select>
                             <input
                               type="date"
                               className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              value={newTask.dueDate}
-                              onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                              value={newTask.due_date}
+                              onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                             />
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <select
-                              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              value={newTask.priority}
-                              onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                            >
-                              <option value="low">Low Priority</option>
-                              <option value="medium">Medium Priority</option>
-                              <option value="high">High Priority</option>
-                            </select>
-                            <select
-                              className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              value={newTask.status}
-                              onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="in_progress">In Progress</option>
-                              <option value="completed">Completed</option>
-                            </select>
-                          </div>
+                          
                           <button
                             onClick={createIndividualTask}
                             className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
@@ -658,18 +723,24 @@ const TeamLeadDashboard = () => {
                                 {getStatusIcon(task.status)}
                                 <span className="ml-1">{task.status}</span>
                               </span>
-                              <span>Assignee: {task.assignee}</span>
+                              <span>assigned_to: {task.assigned_to}</span>
                             </div>
-                            <label className="flex items-center px-3 py-1 bg-gray-100 rounded-lg hover:bg-gray-200 cursor-pointer text-sm whitespace-nowrap">
-                              <Upload className="w-3 h-3 mr-1" />
-                              Upload
-                              <input
-                                type="file"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, 'task', task.id)}
-                              />
-                            </label>
+                            {taskDocuments[task.id] && taskDocuments[task.id].length > 0 ? (
+                              <div className="flex items-center gap-2">
+                                {taskDocuments[task.id].map(doc => (
+                                  <button
+                                    key={doc.id}
+                                    onClick={() => window.open(`https://gateway.pinata.cloud/ipfs/${doc.file}`, '_blank')}
+                                    className="flex items-center px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 cursor-pointer text-sm whitespace-nowrap"
+                                  >
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    Preview
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">No documents</span>
+                            )}
                           </div>
                         </div>
                       ))}

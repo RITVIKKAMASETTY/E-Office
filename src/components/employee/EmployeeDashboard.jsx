@@ -5,7 +5,7 @@ import empService from '../../services/empservice';
 const EmployeeDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [documents, setDocuments] = useState([]);
+  const [documents, setDocuments] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
@@ -16,6 +16,7 @@ const EmployeeDashboard = () => {
   });
   const [filterStatus, setFilterStatus] = useState('all');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const colors = {
     primary: '#004A9F',
@@ -43,24 +44,27 @@ const EmployeeDashboard = () => {
     }
   };
 
-  // Fetch documents for selected task
+  // Fetch documents for all tasks on mount
   useEffect(() => {
-    if (selectedTask) {
-      fetchDocuments(selectedTask.id);
+    if (tasks.length > 0) {
+      tasks.forEach(task => {
+        fetchDocuments(task.id);
+      });
     }
-  }, [selectedTask]);
+  }, [tasks.length]);
+
+  
 
   const fetchDocuments = async (taskId) => {
-    setLoading(true);
     try {
       const data = await empService.getDocumentsByTask(taskId);
-      setDocuments(data);
+      setDocuments(prev => ({ ...prev, [taskId]: data }));
     } catch (err) {
-      setError(err.message || 'Failed to fetch documents');
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch documents:', err);
     }
   };
+
+  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -136,6 +140,10 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const handlePreviewDocument = (fileUrl, fileName) => {
+    setPreviewDoc({ fileUrl, fileName });
+  };
+
   const getStatusBadge = (status) => {
     const statusMap = {
       pending: { bg: '#FEE2E2', text: '#DC2626', icon: Clock },
@@ -171,15 +179,6 @@ const EmployeeDashboard = () => {
     if (filterStatus === 'all') return true;
     return task.status === filterStatus;
   });
-
-  const handleDownloadDocument = (fileUrl, fileName) => {
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName || 'document';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const isUploadDisabled = (task) => {
     const dueDate = new Date(task.due_date);
@@ -384,22 +383,18 @@ const EmployeeDashboard = () => {
                   )}
                 </div>
 
-                {!selectedTask || selectedTask.id !== task.id ? (
+                {!documents[task.id] ? (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#9CA3AF' }}>
-                    <p style={{ fontSize: '13px' }}>No documents loaded</p>
+                    <p style={{ fontSize: '13px' }}>Loading documents...</p>
                   </div>
-                ) : loading && !documents.length ? (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#9CA3AF' }}>
-                    <p>Loading documents...</p>
-                  </div>
-                ) : documents.length === 0 ? (
+                ) : documents[task.id].length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '20px', color: '#9CA3AF' }}>
                     <FileText size={32} style={{ marginBottom: '8px', opacity: '0.5' }} />
                     <p style={{ fontSize: '13px' }}>No documents uploaded yet</p>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {documents.map((doc) => (
+                    {documents[task.id].map((doc) => (
                       <div
                         key={doc.id}
                         style={{
@@ -421,7 +416,7 @@ const EmployeeDashboard = () => {
                           </p>
                         </div>
                         <button
-                          onClick={() => handleDownloadDocument(doc.file, doc.description)}
+                          onClick={() => handlePreviewDocument(doc.file, doc.description)}
                           style={{
                             padding: '6px 10px',
                             backgroundColor: colors.secondary,
@@ -443,7 +438,8 @@ const EmployeeDashboard = () => {
                             e.currentTarget.style.backgroundColor = colors.secondary;
                           }}
                         >
-                          <Download size={14} />
+                          <FileText size={14} />
+                          Preview
                         </button>
                       </div>
                     ))}
@@ -615,6 +611,73 @@ const EmployeeDashboard = () => {
               >
                 {loading ? 'Uploading...' : 'Upload Document'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            right: '0',
+            bottom: '0',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: '1000',
+          }}
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '90%',
+              maxHeight: '90%',
+              width: '900px',
+              height: '600px',
+              boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: colors.primary, fontSize: '18px', fontWeight: '700', margin: '0' }}>
+                {previewDoc.fileName}
+              </h3>
+              <button
+                onClick={() => setPreviewDoc(null)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#F3F4F6',
+                  color: colors.text,
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ flex: '1', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+              <iframe
+                src={previewDoc.fileUrl}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+                title="Document Preview"
+              />
             </div>
           </div>
         </div>
