@@ -302,10 +302,16 @@ const ManagerDashboard = () => {
   };
 
   const uploadToPinata = async (file) => {
+    if (!PINATA_API_KEY || !PINATA_API_SECRET) {
+      throw new Error('Pinata API credentials not configured');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
     try {
+      console.log('Uploading to Pinata:', file.name, 'Size:', file.size);
+      
       const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
         method: 'POST',
         headers: {
@@ -315,18 +321,25 @@ const ManagerDashboard = () => {
         body: formData,
       });
 
+      const responseText = await response.text();
+      console.log('Pinata response status:', response.status);
+      console.log('Pinata response:', responseText);
+
       if (response.ok) {
-        const data = await response.json();
+        const data = JSON.parse(responseText);
+        console.log('Pinata upload successful:', data.IpfsHash);
         return {
           ipfsHash: data.IpfsHash,
           fileName: file.name,
           fileSize: file.size,
         };
+      } else {
+        throw new Error(`Pinata upload failed: ${response.status} - ${responseText}`);
       }
     } catch (error) {
       console.error('Error uploading to Pinata:', error);
+      throw error;
     }
-    return null;
   };
 
   const updateTask = async (taskId, updates) => {
@@ -366,20 +379,29 @@ const ManagerDashboard = () => {
       const token = window.localStorage ? localStorage.getItem('token') : null;
       setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
 
+      console.log('Starting upload for file:', file.name, 'to task ID:', taskId);
+      
       const pinataResult = await uploadToPinata(file);
-      if (!pinataResult) throw new Error('Pinata upload failed');
+      if (!pinataResult) {
+        throw new Error('Failed to upload file to IPFS');
+      }
 
       setUploadProgress(prev => ({ ...prev, [file.name]: 50 }));
 
       const task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        throw new Error('Task not found');
+      }
+
       const payload = {
-        task: task.title,
+        task: task.id,
+        title: pinataResult.fileName,
         file: `https://gateway.pinata.cloud/ipfs/${pinataResult.ipfsHash}`,
-        description: pinataResult.fileName
+        description: `Document for ${task.title}`,
+        ipfs_hash: pinataResult.ipfsHash
       };
       
       console.log('Payload being sent:', payload);
-      console.log('Token being used:', token);
       console.log('API URL:', `${API_BASE_URL}/tasks/task-documents/`);
       
       const response = await fetch(`${API_BASE_URL}/tasks/task-documents/`, {
@@ -391,6 +413,10 @@ const ManagerDashboard = () => {
         body: JSON.stringify(payload)
       });
 
+      const responseText = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response text:', responseText);
+
       if (response.ok) {
         setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
         setTimeout(() => setUploadProgress(prev => {
@@ -399,14 +425,14 @@ const ManagerDashboard = () => {
           return updated;
         }), 2000);
         await fetchTaskDocuments();
-        return await response.json();
+        alert('Document uploaded successfully!');
+        return JSON.parse(responseText);
       } else {
-        const errorText = await response.text();
-        console.error('Upload failed:', response.status, errorText);
-        alert(`Upload failed: ${response.status} - ${errorText}`);
+        throw new Error(`Upload failed: ${response.status} - ${responseText}`);
       }
     } catch (error) {
       console.error('Error uploading document:', error);
+      alert(`Upload failed: ${error.message}`);
       setUploadProgress(prev => {
         const updated = { ...prev };
         delete updated[file.name];
@@ -502,6 +528,8 @@ const ManagerDashboard = () => {
   const handleFileUpload = async (e, type, identifier) => {
     const files = Array.from(e.target.files);
     console.log('Files selected:', files);
+    console.log('Upload type:', type, 'identifier:', identifier);
+    console.log('Available tasks:', tasks);
     
     if (files.length === 0) {
       console.log('No files selected');
@@ -513,21 +541,26 @@ const ManagerDashboard = () => {
       try {
         if (type === 'task') {
           const task = tasks.find(t => t.title === identifier);
+          console.log('Found task:', task);
           if (!task) {
             console.error('Task not found:', identifier);
+            alert(`Task not found: ${identifier}`);
             continue;
           }
           await uploadTaskDocument(file, task.id);
         } else {
           const subTask = subTasks.find(st => st.title === identifier);
+          console.log('Found subtask:', subTask);
           if (!subTask) {
             console.error('SubTask not found:', identifier);
+            alert(`SubTask not found: ${identifier}`);
             continue;
           }
           await uploadSubTaskDocument(file, subTask.id);
         }
       } catch (error) {
         console.error('Upload failed for file:', file.name, error);
+        alert(`Upload failed for ${file.name}: ${error.message}`);
       }
     }
     // Reset file input
@@ -691,24 +724,31 @@ const ManagerDashboard = () => {
                           <div className="mt-4 pt-4 border-t">
                             <h5 className="font-medium text-[#1F2937] mb-2">Task Documents</h5>
                             <div className="grid grid-cols-2 gap-2">
-                              {taskDocuments.filter(doc => doc.task === task.title).map((doc) => {
+                              {taskDocuments.filter(doc => doc.task === task.id || doc.task === task.title).map((doc) => {
                                 console.log('Document data:', doc);
+                                const fileUrl = doc.file?.startsWith('http') ? doc.file : 
+                                               doc.ipfs_hash ? `https://gateway.pinata.cloud/ipfs/${doc.ipfs_hash}` : '#';
+                                const fileName = doc.title || doc.description || doc.file?.split('/').pop() || 'Document';
+                                
                                 return (
                                 <div key={doc.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
                                   <a
-                                    href={doc.file?.startsWith('http') ? doc.file : '#'}
+                                    href={fileUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center space-x-2 cursor-pointer"
-                                    onClick={() => console.log('Clicked doc:', doc)}
+                                    onClick={() => console.log('Opening document:', fileUrl)}
                                   >
                                     <FileText className="w-4 h-4 text-blue-600" />
                                     <div className="flex-1">
                                       <div className="text-sm font-medium text-blue-600 hover:underline">
-                                        {doc.file?.startsWith('http') ? doc.description || doc.file.split('/').pop() : doc.file || 'Document'}
+                                        {fileName}
                                       </div>
-                                      <div className="text-xs text-gray-500">Document for {task.title}</div>
+                                      <div className="text-xs text-gray-500">{doc.description || `Document for ${task.title}`}</div>
                                       <div className="text-xs text-gray-400">Uploaded: {formatDate(doc.uploaded_at)} by {doc.uploaded_by}</div>
+                                      {doc.ipfs_hash && (
+                                        <div className="text-xs text-blue-600">Stored on IPFS</div>
+                                      )}
                                     </div>
                                   </a>
                                 </div>

@@ -78,11 +78,21 @@ function App() {
           } 
         />
         
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route 
+          path="/dashboard/manager" 
+          element={
+            <ProtectedRoute allowedRoles={['manager', 'Manager']}>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Root route - Landing page */}
+        <Route path="/" element={<Landing />} />
         
         {/* Catch all - redirect to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     </Router>
   );
 }

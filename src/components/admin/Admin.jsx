@@ -187,12 +187,15 @@ const AdminDashboard = () => {
     if (!authToken) return;
     setLoading(true);
     try {
+      console.log('Admin fetching tasks from:', `${API_BASE_URL}/tasks/`);
+      console.log('Admin token:', authToken);
       const res = await fetch(`${API_BASE_URL}/tasks/`, {
         headers: {
           'Authorization': `Token ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
+      console.log('Admin response status:', res.status);
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error('Session expired. Please login again.');
@@ -200,9 +203,11 @@ const AdminDashboard = () => {
         throw new Error('Failed to fetch tasks');
       }
       const data = await res.json();
+      console.log('Admin tasks data:', data);
       setTasks(data);
       setError('');
     } catch (err) {
+      console.error('Admin fetch tasks error:', err);
       setError(err.message);
       if (err.message.includes('login again')) {
         localStorage.clear();
@@ -471,37 +476,45 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {tasks.map(task => (
-                    <tr key={task.id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{task.title}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{task.description}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{task.assigned_to}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{new Date(task.due_date).toLocaleString()}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          task.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {task.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm flex gap-2">
-                        <button
-                          onClick={() => handleEditTask(task)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                  {tasks.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                        No tasks found. {loading ? 'Loading...' : 'Create a new task to get started.'}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    tasks.map(task => (
+                      <tr key={task.id} className="border-b hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900">{task.title}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{task.description}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{task.assigned_to}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{new Date(task.due_date).toLocaleString()}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            task.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm flex gap-2">
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
