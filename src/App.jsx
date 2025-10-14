@@ -7,6 +7,7 @@ import EmployeeDashboard from './components/employee/EmployeeDashboard';
 import ManagerDashboard from './pages/Manager';
 import AdminDashboard from './components/admin/Admin';
 
+
 export default function App() {
   return (
     <Router>
@@ -19,7 +20,6 @@ export default function App() {
           <Route path="/dashboard/admin" element={<AdminDashboard />} />
           <Route path="/dashboard/manager" element={<ManagerDashboard />} />
           <Route path="/dashboard/member" element={<EmployeeDashboard />} />
-
           <Route path="/dashboard" element={<div>Default Dashboard</div>} />
         </Routes>
       </div>

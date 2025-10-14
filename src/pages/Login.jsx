@@ -74,12 +74,11 @@ const Login = () => {
           admin: "/dashboard/admin",
           manager: "/dashboard/manager",
           member: "/dashboard/member",
-          teamleader: "/dashboard/teamlead", // Add alias
-          
+          "team leader": "/dashboard/teamlead",
+          teamleader: "/dashboard/teamlead"
         };
 
-        const userRole = data.role === "Team Leader" ? "teamleader" : data.role.toLowerCase();
-        const redirectPath = routes[userRole];
+        const redirectPath = routes[normalizedRole] || routes[data.role.toLowerCase()];
 
         setTimeout(() => {
           window.location.href = redirectPath;
