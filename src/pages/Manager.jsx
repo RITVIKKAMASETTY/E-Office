@@ -639,13 +639,6 @@ const ManagerDashboard = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold text-[#1F2937]">Task Management</h2>
-              <button
-                onClick={() => setShowCreateTask(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-[#004A9F] text-white rounded-lg hover:bg-[#003875] transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create Task</span>
-              </button>
             </div>
 
             {loading ? (
