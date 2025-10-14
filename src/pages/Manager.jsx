@@ -394,11 +394,9 @@ const ManagerDashboard = () => {
       }
 
       const payload = {
-        task: task.id,
-        title: pinataResult.fileName,
+        task: task.title,
         file: `https://gateway.pinata.cloud/ipfs/${pinataResult.ipfsHash}`,
-        description: `Document for ${task.title}`,
-        ipfs_hash: pinataResult.ipfsHash
+        description: pinataResult.fileName
       };
       
       console.log('Payload being sent:', payload);
