@@ -1,5 +1,5 @@
 # 🏛️ Karyamitra – Data-Driven Productivity and Performance Evaluation System  
-### _A Smart India Hackathon 2025 Project by Platform-404_
+
 
 ---
 
@@ -181,9 +181,6 @@ Dashboards display performance insights for:
 
 ---
 
-## 👥 Team Platform-404  
-**Smart India Hackathon 2025 | Software Edition**
-
 
 > “Karyamitra transforms government workplaces by turning perception-based appraisals into performance-based excellence.”  
-> — *Team Platform-404, Smart India Hackathon 2025*
+
