@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from './ProtectedRoute'; // Adjust path as needed
+import ProtectedRoute from './ProtectedRoute'; 
+import Map from './components/Map'; // Adjust path as needed
 // import { BrowserRouter as Router } from 'react-router-dom';
 // import Landing from './pages/Landing';
 // import { Routes, Route } from 'react-router-dom';
@@ -89,7 +90,7 @@ function App() {
         
         {/* Root route - Landing page */}
         <Route path="/" element={<Landing />} />
-        
+        <Route path="/maps" element={<Map/>} />
         {/* Catch all - redirect to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
