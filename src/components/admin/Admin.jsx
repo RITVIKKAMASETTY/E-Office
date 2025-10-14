@@ -8,7 +8,7 @@ const AdminDashboard = () => {
   const [success, setSuccess] = useState('');
   const [authToken, setAuthToken] = useState('');
   const [userData, setUserData] = useState(null);
-  const API_BASE_URL = 'https://core-ffe9.onrender.com/api';
+  const API_BASE_URL = import.meta.env.VITE_URL;
 
   // Roles State
   const [roles, setRoles] = useState([]);
