@@ -50,6 +50,46 @@ const createCustomIcon = (color) => {
   });
 };
 
+// Custom popup styles
+const popupStyles = `
+  .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border: 2px solid #e5e7eb;
+  }
+  .leaflet-popup-tip {
+    box-shadow: none;
+  }
+  .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    min-width: 280px;
+  }
+  .leaflet-popup-close-button {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 1000;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+  }
+`;
+
+// Add styles to document head
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = popupStyles;
+  document.head.appendChild(styleSheet);
+}
+
 // Component to handle map view changes
 const MapController = ({ center, zoom, selectedProject }) => {
   const map = useMap();
@@ -80,6 +120,7 @@ const KaryamitraGIS = () => {
   const [notification, setNotification] = useState(null);
   const [recentActions, setRecentActions] = useState([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
 
   // Show notification
   const showNotification = (message, type = 'info') => {
@@ -432,7 +473,7 @@ const KaryamitraGIS = () => {
     }[notification.type];
 
     return (
-      <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3 animate-in slide-in-from-right`}>
+      <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-[9999] flex items-center gap-3 animate-in slide-in-from-right`}>
         <Info size={20} />
         <span>{notification.message}</span>
         <button onClick={() => setNotification(null)} className="hover:bg-white/20 rounded p-1">
@@ -449,7 +490,7 @@ const KaryamitraGIS = () => {
     const dept = departments.find(d => d.id === project.department);
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
         <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -557,6 +598,62 @@ const KaryamitraGIS = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  const CustomPopup = ({ project }) => {
+    return (
+      <div className="p-4 min-w-[280px]">
+        <div className="flex items-center gap-2 mb-3">
+          <div 
+            className="w-3 h-3 rounded-full" 
+            style={{ backgroundColor: getStatusColor(project.status) }}
+          />
+          <span className="font-bold text-gray-800 text-sm flex-1">{project.name}</span>
+        </div>
+        <p className="text-gray-600 text-xs mb-4 leading-relaxed">{project.description}</p>
+        
+        <div className="space-y-2 text-xs mb-4">
+          <div className="flex justify-between">
+            <span className="text-gray-500">Status:</span>
+            <span className="font-medium capitalize">{getStatusText(project.status)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Progress:</span>
+            <span className="font-medium">{project.progress}%</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Budget:</span>
+            <span className="font-medium">{project.budget}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Officer:</span>
+            <span className="font-medium text-right">{project.officer.split(',')[0]}</span>
+          </div>
+        </div>
+        
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
+          <div 
+            className="h-2 rounded-full transition-all"
+            style={{
+              width: `${project.progress}%`,
+              backgroundColor: getStatusColor(project.status)
+            }}
+          />
+        </div>
+        
+        <div className="flex gap-2">
+          <button 
+            onClick={() => handleProjectClick(project)}
+            className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            View Details
+          </button>
+          <button className="px-3 py-2 bg-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 transition-colors font-medium">
+            Directions
+          </button>
         </div>
       </div>
     );
@@ -1030,18 +1127,12 @@ const KaryamitraGIS = () => {
           >
             <MapController center={mapCenter} zoom={mapZoom} selectedProject={selectedProject} />
             
-            {/* Tile Layer with different options */}
+            {/* Tile Layer */}
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {/* Alternative satellite view */}
-            {/* <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            /> */}
-
             {/* Project Markers */}
             {filteredProjects.map(project => (
               <Marker
@@ -1049,59 +1140,28 @@ const KaryamitraGIS = () => {
                 position={[project.lat, project.lng]}
                 icon={createCustomIcon(getStatusColor(project.status))}
                 eventHandlers={{
-                  click: () => handleProjectClick(project),
+                  click: (e) => {
+                    e.originalEvent.stopPropagation();
+                    handleProjectClick(project);
+                  },
+                  popupopen: () => setPopupOpen(true),
+                  popupclose: () => setPopupOpen(false),
                 }}
               >
-                <Popup>
-                  <div className="p-2 min-w-[250px]">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: getStatusColor(project.status) }}
-                      />
-                      <span className="font-bold text-gray-800 text-sm">{project.name}</span>
-                    </div>
-                    <p className="text-gray-600 text-xs mb-3">{project.description}</p>
-                    
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Status:</span>
-                        <span className="font-medium capitalize">{getStatusText(project.status)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Progress:</span>
-                        <span className="font-medium">{project.progress}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Budget:</span>
-                        <span className="font-medium">{project.budget}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-3 overflow-hidden">
-                      <div 
-                        className="h-2 rounded-full transition-all"
-                        style={{
-                          width: `${project.progress}%`,
-                          backgroundColor: getStatusColor(project.status)
-                        }}
-                      />
-                    </div>
-                    
-                    <button 
-                      onClick={() => handleProjectClick(project)}
-                      className="w-full mt-3 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors font-medium"
-                    >
-                      View Details
-                    </button>
-                  </div>
+                <Popup
+                  className="custom-popup"
+                  closeButton={true}
+                  autoPan={true}
+                  autoPanPadding={[20, 20]}
+                >
+                  <CustomPopup project={project} />
                 </Popup>
               </Marker>
             ))}
           </MapContainer>
 
           {/* Legend */}
-          <div className="absolute bottom-6 left-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-[1000]">
+          <div className={`absolute bottom-6 left-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-[1000] transition-all ${popupOpen ? 'opacity-70 hover:opacity-100' : 'opacity-100'}`}>
             <h4 className="font-bold text-sm mb-3 text-gray-800 flex items-center gap-2">
               <Activity size={16} />
               Project Status Legend
@@ -1132,7 +1192,7 @@ const KaryamitraGIS = () => {
           </div>
 
           {/* Map Controls */}
-          <div className="absolute top-6 right-6 bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[1000]">
+          <div className={`absolute top-6 right-6 bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[1000] transition-all ${popupOpen ? 'opacity-70 hover:opacity-100' : 'opacity-100'}`}>
             <div className="p-2 space-y-2">
               <button 
                 className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow transform hover:scale-105"
@@ -1174,7 +1234,7 @@ const KaryamitraGIS = () => {
           </div>
 
           {/* Quick Stats Overlay */}
-          <div className="absolute bottom-6 right-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-[1000]">
+          <div className={`absolute bottom-6 right-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-[1000] transition-all ${popupOpen ? 'opacity-70 hover:opacity-100' : 'opacity-100'}`}>
             <h4 className="font-bold text-sm mb-3 text-gray-800">Quick Statistics</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between gap-6">
