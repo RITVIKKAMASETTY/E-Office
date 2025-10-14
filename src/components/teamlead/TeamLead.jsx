@@ -64,15 +64,15 @@ const TeamLeadDashboard = () => {
       console.log('User data:', parsedUser);
       console.log('Token exists:', !!token);
       
-      if (parsedUser.role !== 'Team Leader') {
+      if (parsedUser.role !== 'Team Leader' && parsedUser.role !== 'teamleader') {
+        console.log('Role mismatch, redirecting. User role:', parsedUser.role);
         const roleRoutes = {
           admin: '/dashboard/admin',
           manager: '/dashboard/manager',
-          employee: '/dashboard/employee',
-          teamleader: '/dashboard/teamlead'
+          member: '/dashboard/member'
         };
-        const userRole = parsedUser.role === "Team Leader" ? "teamleader" : parsedUser.role.toLowerCase();
-        window.location.href = roleRoutes[userRole] || '/dashboard';
+        const userRole = parsedUser.role.toLowerCase();
+        window.location.href = roleRoutes[userRole] || '/login';
         return;
       }
       setUserData(parsedUser);
