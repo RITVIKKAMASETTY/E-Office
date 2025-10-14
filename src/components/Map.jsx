@@ -1,577 +1,71 @@
-// import React, { useState, useEffect } from 'react';
-// import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-// import { MapPin, Layers, Activity, AlertCircle, CheckCircle, Clock, Home, Building2, Droplet, Stethoscope, GraduationCap, Sprout, Shield, Search, Filter, Download, Users, TrendingUp } from 'lucide-react';
-// import 'leaflet/dist/leaflet.css';
-// import L from 'leaflet';
-
-// // Fix for default markers in react-leaflet
-// delete L.Icon.Default.prototype._getIconUrl;
-// L.Icon.Default.mergeOptions({
-//   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-//   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-//   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-// });
-
-// const KaryamitraGIS = () => {
-//   const [activePage, setActivePage] = useState('overview');
-//   const [selectedDept, setSelectedDept] = useState(null);
-//   const [mapCenter, setMapCenter] = useState([12.9716, 77.5946]); // Bangalore
-//   const [projects, setProjects] = useState([]);
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [statusFilter, setStatusFilter] = useState('all');
-
-//   // Sample project data with GIS coordinates
-//   const projectData = {
-//     pwd: [
-//       { 
-//         id: 1, 
-//         name: 'NH-48 Highway Upgrade', 
-//         lat: 12.9716, 
-//         lng: 77.5946, 
-//         status: 'completed', 
-//         progress: 100,
-//         budget: '₹245 Cr',
-//         startDate: '2023-01-15',
-//         endDate: '2024-03-20',
-//         officer: 'Rajesh Kumar, Executive Engineer',
-//         description: 'Six-laning of National Highway 48 with smart traffic management system'
-//       },
-//       { 
-//         id: 2, 
-//         name: 'Metro Line Extension', 
-//         lat: 13.0827, 
-//         lng: 77.5877, 
-//         status: 'progress', 
-//         progress: 65,
-//         budget: '₹1,200 Cr',
-//         startDate: '2023-06-01',
-//         endDate: '2024-12-15',
-//         officer: 'Priya Sharma, Project Director',
-//         description: 'Extension of metro line covering 12 new stations'
-//       },
-//       { 
-//         id: 3, 
-//         name: 'Outer Ring Road Construction', 
-//         lat: 12.8698, 
-//         lng: 77.6501, 
-//         status: 'delayed', 
-//         progress: 35,
-//         budget: '₹890 Cr',
-//         startDate: '2023-03-10',
-//         endDate: '2024-08-30',
-//         officer: 'Anil Patel, Superintending Engineer',
-//         description: 'Construction of 45km outer ring road with 8 major junctions'
-//       }
-//     ],
-//     urban: [
-//       { 
-//         id: 4, 
-//         name: 'Smart City Phase 2', 
-//         lat: 12.9352, 
-//         lng: 77.6245, 
-//         status: 'progress', 
-//         progress: 78,
-//         budget: '₹650 Cr',
-//         startDate: '2023-02-20',
-//         endDate: '2024-06-30',
-//         officer: 'Meera Nair, Urban Planner',
-//         description: 'Implementation of smart infrastructure and digital governance systems'
-//       },
-//       { 
-//         id: 5, 
-//         name: 'Integrated Waste Management Hub', 
-//         lat: 13.0358, 
-//         lng: 77.5970, 
-//         status: 'completed', 
-//         progress: 100,
-//         budget: '₹320 Cr',
-//         startDate: '2022-11-05',
-//         endDate: '2024-01-15',
-//         officer: 'Sanjay Verma, Municipal Commissioner',
-//         description: 'Modern waste processing facility with recycling units'
-//       }
-//     ],
-//     water: [
-//       { 
-//         id: 6, 
-//         name: 'Kaveri Water Pipeline Project', 
-//         lat: 12.9141, 
-//         lng: 77.6411, 
-//         status: 'progress', 
-//         progress: 55,
-//         budget: '₹780 Cr',
-//         startDate: '2023-04-12',
-//         endDate: '2024-09-20',
-//         officer: 'Vikram Singh, Chief Engineer',
-//         description: 'Laying of 120km pipeline for enhanced water distribution'
-//       },
-//       { 
-//         id: 7, 
-//         name: 'Hesaraghatta Reservoir Expansion', 
-//         lat: 13.1043, 
-//         lng: 77.5847, 
-//         status: 'delayed', 
-//         progress: 42,
-//         budget: '₹540 Cr',
-//         startDate: '2023-01-30',
-//         endDate: '2024-07-15',
-//         officer: 'Neha Reddy, Project Manager',
-//         description: 'Expansion of reservoir capacity by 40% with modern filtration'
-//       }
-//     ],
-//     health: [
-//       { 
-//         id: 8, 
-//         name: 'District Super Specialty Hospital', 
-//         lat: 12.9698, 
-//         lng: 77.7499, 
-//         status: 'completed', 
-//         progress: 100,
-//         budget: '₹950 Cr',
-//         startDate: '2022-08-10',
-//         endDate: '2024-02-28',
-//         officer: 'Dr. Arjun Mehta, Medical Superintendent',
-//         description: '500-bed super specialty hospital with advanced medical facilities'
-//       },
-//       { 
-//         id: 9, 
-//         name: 'Primary Health Center Network', 
-//         lat: 12.8449, 
-//         lng: 77.6648, 
-//         status: 'progress', 
-//         progress: 70,
-//         budget: '₹280 Cr',
-//         startDate: '2023-03-25',
-//         endDate: '2024-05-10',
-//         officer: 'Dr. Sunita Rao, Health Director',
-//         description: 'Establishment of 25 primary health centers across rural areas'
-//       }
-//     ]
-//   };
-
-//   const departments = [
-//     { id: 'pwd', name: 'Public Works Department', icon: Building2, color: '#1e40af', projects: projectData.pwd },
-//     { id: 'urban', name: 'Urban Development', icon: Home, color: '#7c3aed', projects: projectData.urban },
-//     { id: 'water', name: 'Water Resources', icon: Droplet, color: '#0891b2', projects: projectData.water },
-//     { id: 'health', name: 'Health Department', icon: Stethoscope, color: '#db2777', projects: projectData.health },
-//     { id: 'education', name: 'Education', icon: GraduationCap, color: '#d97706', projects: [] },
-//     { id: 'agriculture', name: 'Agriculture', icon: Sprout, color: '#059669', projects: [] },
-//     { id: 'disaster', name: 'Disaster Management', icon: Shield, color: '#dc2626', projects: [] }
-//   ];
-
-//   useEffect(() => {
-//     if (selectedDept) {
-//       const dept = departments.find(d => d.id === selectedDept);
-//       setProjects(dept?.projects || []);
-//     } else {
-//       setProjects(Object.values(projectData).flat());
-//     }
-//   }, [selectedDept]);
-
-//   const filteredProjects = projects.filter(project => {
-//     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//                          project.description.toLowerCase().includes(searchTerm.toLowerCase());
-//     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-//     return matchesSearch && matchesStatus;
-//   });
-
-//   const getStatusColor = (status) => {
-//     switch(status) {
-//       case 'completed': return '#059669';
-//       case 'progress': return '#d97706';
-//       case 'delayed': return '#dc2626';
-//       default: return '#6b7280';
-//     }
-//   };
-
-//   const getStatusIcon = (status) => {
-//     switch(status) {
-//       case 'completed': return <CheckCircle size={16} />;
-//       case 'progress': return <Clock size={16} />;
-//       case 'delayed': return <AlertCircle size={16} />;
-//       default: return <Activity size={16} />;
-//     }
-//   };
-
-//   const MapController = ({ center }) => {
-//     const map = useMap();
-//     useEffect(() => {
-//       map.setView(center, map.getZoom());
-//     }, [center, map]);
-//     return null;
-//   };
-
-//   const CustomMarker = ({ project }) => {
-//     const icon = L.divIcon({
-//       html: `
-//         <div style="
-//           background-color: ${getStatusColor(project.status)};
-//           width: 24px;
-//           height: 24px;
-//           border: 3px solid white;
-//           border-radius: 50%;
-//           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-//           cursor: pointer;
-//         "></div>
-//       `,
-//       className: 'custom-marker',
-//       iconSize: [24, 24],
-//       iconAnchor: [12, 12]
-//     });
-
-//     return (
-//       <Marker position={[project.lat, project.lng]} icon={icon}>
-//         <Popup>
-//           <div className="p-2 min-w-[250px]">
-//             <h3 className="font-bold text-gray-800 mb-2">{project.name}</h3>
-//             <div className="space-y-2 text-sm">
-//               <div className="flex items-center gap-2">
-//                 <div className={`w-3 h-3 rounded-full`} style={{backgroundColor: getStatusColor(project.status)}} />
-//                 <span className="capitalize">{project.status}</span>
-//               </div>
-//               <div><strong>Progress:</strong> {project.progress}%</div>
-//               <div><strong>Budget:</strong> {project.budget}</div>
-//               <div><strong>Officer:</strong> {project.officer.split(',')[0]}</div>
-//               <button 
-//                 onClick={() => {
-//                   // Add detailed view functionality
-//                   console.log('View details:', project.id);
-//                 }}
-//                 className="w-full mt-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-//               >
-//                 View Details
-//               </button>
-//             </div>
-//           </div>
-//         </Popup>
-//       </Marker>
-//     );
-//   };
-
-//   const OverviewPage = () => (
-//     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-//       {/* Header */}
-//       <div className="bg-white/10 backdrop-blur-md border-b border-white/20">
-//         <div className="container mx-auto px-6 py-4">
-//           <div className="flex items-center justify-between">
-//             <div className="flex items-center gap-4">
-//               <div className="bg-white rounded-lg p-2">
-//                 <MapPin className="text-blue-600" size={32} />
-//               </div>
-//               <div>
-//                 <h1 className="text-2xl font-bold text-white">Karyamitra GIS Portal</h1>
-//                 <p className="text-blue-200 text-sm">Government of Karnataka - Project Monitoring System</p>
-//               </div>
-//             </div>
-//             <div className="text-right">
-//               <p className="text-white text-sm">Real-time Dashboard</p>
-//               <p className="text-blue-200 text-xs">{new Date().toLocaleDateString('en-IN')}</p>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="container mx-auto px-6 py-8">
-//         {/* Key Metrics */}
-//         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-//           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 text-white">
-//             <div className="flex items-center justify-between mb-4">
-//               <MapPin size={28} className="text-blue-300" />
-//               <span className="text-3xl font-bold">247</span>
-//             </div>
-//             <p className="text-blue-200 text-sm">Active Projects</p>
-//           </div>
-//           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 text-white">
-//             <div className="flex items-center justify-between mb-4">
-//               <CheckCircle size={28} className="text-green-300" />
-//               <span className="text-3xl font-bold">89%</span>
-//             </div>
-//             <p className="text-blue-200 text-sm">Completion Rate</p>
-//           </div>
-//           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 text-white">
-//             <div className="flex items-center justify-between mb-4">
-//               <TrendingUp size={28} className="text-orange-300" />
-//               <span className="text-3xl font-bold">₹4,875Cr</span>
-//             </div>
-//             <p className="text-blue-200 text-sm">Total Budget</p>
-//           </div>
-//           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 text-white">
-//             <div className="flex items-center justify-between mb-4">
-//               <Users size={28} className="text-purple-300" />
-//               <span className="text-3xl font-bold">7</span>
-//             </div>
-//             <p className="text-blue-200 text-sm">Departments</p>
-//           </div>
-//         </div>
-
-//         {/* Main Content */}
-//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-//           {/* Features Card */}
-//           <div className="lg:col-span-2 bg-white rounded-2xl shadow-2xl p-8">
-//             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-//               <Layers className="text-blue-600" />
-//               Advanced GIS Features
-//             </h2>
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//               <div className="border-l-4 border-blue-500 pl-4">
-//                 <h3 className="font-bold text-lg text-gray-800 mb-2">Project Location Mapping</h3>
-//                 <p className="text-gray-600 text-sm">Every government project mapped with real-time status updates and color-coded progress indicators.</p>
-//               </div>
-//               <div className="border-l-4 border-green-500 pl-4">
-//                 <h3 className="font-bold text-lg text-gray-800 mb-2">Region-wise Performance</h3>
-//                 <p className="text-gray-600 text-sm">District-level KPI tracking with visual analytics for data-driven decision making.</p>
-//               </div>
-//               <div className="border-l-4 border-orange-500 pl-4">
-//                 <h3 className="font-bold text-lg text-gray-800 mb-2">Real-time Field Updates</h3>
-//                 <p className="text-gray-600 text-sm">GPS-verified updates from field officers with photo documentation and location tagging.</p>
-//               </div>
-//               <div className="border-l-4 border-purple-500 pl-4">
-//                 <h3 className="font-bold text-lg text-gray-800 mb-2">AI + GIS Insights</h3>
-//                 <p className="text-gray-600 text-sm">Predictive analytics for delay patterns, resource optimization, and performance forecasting.</p>
-//               </div>
-//             </div>
-//             <button 
-//               onClick={() => setActivePage('map')}
-//               className="mt-8 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-3"
-//             >
-//               <MapPin size={20} />
-//               Open Interactive GIS Map
-//             </button>
-//           </div>
-
-//           {/* Departments Quick Access */}
-//           <div className="bg-white rounded-2xl shadow-2xl p-6">
-//             <h2 className="text-xl font-bold text-gray-800 mb-6">Departments</h2>
-//             <div className="space-y-3">
-//               {departments.map(dept => {
-//                 const Icon = dept.icon;
-//                 return (
-//                   <button
-//                     key={dept.id}
-//                     onClick={() => {
-//                       setSelectedDept(dept.id);
-//                       setActivePage('map');
-//                     }}
-//                     className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all flex items-center gap-3 group"
-//                   >
-//                     <Icon size={20} className="text-gray-600 group-hover:text-blue-600" />
-//                     <span className="text-gray-700 group-hover:text-blue-800 font-medium">{dept.name}</span>
-//                     <span className="ml-auto text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-//                       {dept.projects.length}
-//                     </span>
-//                   </button>
-//                 );
-//               })}
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   const MapPage = () => (
-//     <div className="min-h-screen bg-gray-50">
-//       {/* Header */}
-//       <div className="bg-white shadow-sm border-b">
-//         <div className="container mx-auto px-6 py-4">
-//           <div className="flex items-center justify-between">
-//             <div className="flex items-center gap-4">
-//               <button 
-//                 onClick={() => setActivePage('overview')}
-//                 className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
-//               >
-//                 ← Overview
-//               </button>
-//               <div>
-//                 <h1 className="text-xl font-bold text-gray-800">GIS Project Map</h1>
-//                 <p className="text-gray-600 text-sm">Real-time project monitoring and coordination</p>
-//               </div>
-//             </div>
-//             <div className="flex items-center gap-4">
-//               <div className="text-right">
-//                 <p className="text-sm text-gray-600">Total Projects</p>
-//                 <p className="font-bold text-gray-800">{filteredProjects.length}</p>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="flex h-[calc(100vh-73px)]">
-//         {/* Sidebar */}
-//         <div className="w-96 bg-white shadow-lg overflow-y-auto border-r">
-//           <div className="p-6">
-//             {/* Search and Filters */}
-//             <div className="space-y-4 mb-6">
-//               <div className="relative">
-//                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-//                 <input
-//                   type="text"
-//                   placeholder="Search projects..."
-//                   value={searchTerm}
-//                   onChange={(e) => setSearchTerm(e.target.value)}
-//                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//                 />
-//               </div>
-              
-//               <div className="flex gap-2">
-//                 <select
-//                   value={statusFilter}
-//                   onChange={(e) => setStatusFilter(e.target.value)}
-//                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//                 >
-//                   <option value="all">All Status</option>
-//                   <option value="progress">In Progress</option>
-//                   <option value="completed">Completed</option>
-//                   <option value="delayed">Delayed</option>
-//                 </select>
-//                 <button className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-//                   <Filter size={20} />
-//                 </button>
-//               </div>
-//             </div>
-
-//             {/* Departments */}
-//             <div className="mb-6">
-//               <h2 className="text-lg font-bold text-gray-800 mb-3">Departments</h2>
-//               <div className="space-y-2">
-//                 <button
-//                   onClick={() => setSelectedDept(null)}
-//                   className={`w-full text-left px-4 py-3 rounded-lg transition flex items-center gap-3 ${!selectedDept ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
-//                 >
-//                   <Layers size={18} />
-//                   <span>All Departments</span>
-//                   <span className="ml-auto text-sm opacity-75">{Object.values(projectData).flat().length}</span>
-//                 </button>
-//                 {departments.map(dept => {
-//                   const Icon = dept.icon;
-//                   return (
-//                     <button
-//                       key={dept.id}
-//                       onClick={() => setSelectedDept(dept.id)}
-//                       className={`w-full text-left px-4 py-3 rounded-lg transition flex items-center gap-3 ${selectedDept === dept.id ? 'text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
-//                       style={selectedDept === dept.id ? {backgroundColor: dept.color} : {}}
-//                     >
-//                       <Icon size={18} />
-//                       <span className="flex-1">{dept.name}</span>
-//                       <span className="text-sm opacity-75">{dept.projects.length}</span>
-//                     </button>
-//                   );
-//                 })}
-//               </div>
-//             </div>
-
-//             {/* Projects List */}
-//             <div>
-//               <div className="flex items-center justify-between mb-4">
-//                 <h3 className="text-lg font-bold text-gray-800">Projects</h3>
-//                 <button className="text-blue-600 text-sm flex items-center gap-1 hover:text-blue-700">
-//                   <Download size={16} />
-//                   Export
-//                 </button>
-//               </div>
-//               <div className="space-y-3">
-//                 {filteredProjects.map(project => (
-//                   <div 
-//                     key={project.id} 
-//                     className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-//                     onClick={() => setMapCenter([project.lat, project.lng])}
-//                   >
-//                     <div className="flex items-start justify-between mb-2">
-//                       <h4 className="font-semibold text-gray-800 text-sm leading-tight">{project.name}</h4>
-//                       <div style={{color: getStatusColor(project.status)}}>
-//                         {getStatusIcon(project.status)}
-//                       </div>
-//                     </div>
-//                     <div className="text-xs text-gray-600 mb-2 line-clamp-2">
-//                       {project.description}
-//                     </div>
-//                     <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-//                       <span>{project.budget}</span>
-//                       <span>{project.officer.split(',')[0]}</span>
-//                     </div>
-//                     <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-//                       <div 
-//                         className="h-2 rounded-full transition-all"
-//                         style={{
-//                           width: `${project.progress}%`,
-//                           backgroundColor: getStatusColor(project.status)
-//                         }}
-//                       />
-//                     </div>
-//                     <div className="flex justify-between text-xs text-gray-600">
-//                       <span>Progress: {project.progress}%</span>
-//                       <span className="capitalize">{project.status}</span>
-//                     </div>
-//                   </div>
-//                 ))}
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Map Area */}
-//         <div className="flex-1 relative">
-//           <MapContainer
-//             center={mapCenter}
-//             zoom={11}
-//             style={{ height: '100%', width: '100%' }}
-//             zoomControl={true}
-//           >
-//             <MapController center={mapCenter} />
-//             <TileLayer
-//               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-//               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//             />
-//             {filteredProjects.map(project => (
-//               <CustomMarker key={project.id} project={project} />
-//             ))}
-//           </MapContainer>
-
-//           {/* Legend */}
-//           <div className="absolute bottom-6 left-6 bg-white rounded-lg shadow-lg p-4 border">
-//             <h4 className="font-bold text-sm mb-3 text-gray-800">Project Status</h4>
-//             <div className="space-y-2">
-//               <div className="flex items-center gap-2">
-//                 <div className="w-4 h-4 rounded-full bg-green-500" />
-//                 <span className="text-sm text-gray-700">Completed</span>
-//               </div>
-//               <div className="flex items-center gap-2">
-//                 <div className="w-4 h-4 rounded-full bg-orange-500" />
-//                 <span className="text-sm text-gray-700">In Progress</span>
-//               </div>
-//               <div className="flex items-center gap-2">
-//                 <div className="w-4 h-4 rounded-full bg-red-500" />
-//                 <span className="text-sm text-gray-700">Delayed</span>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Map Controls */}
-//           <div className="absolute top-6 right-6 bg-white rounded-lg shadow-lg p-3 space-y-2">
-//             <button 
-//               className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-//               onClick={() => setMapCenter([12.9716, 77.5946])}
-//             >
-//               <MapPin size={20} />
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   return (
-//     <div>
-//       {activePage === 'overview' && <OverviewPage />}
-//       {activePage === 'map' && <MapPage />}
-//     </div>
-//   );
-// };
-
-// export default KaryamitraGIS;
 import React, { useState, useEffect } from 'react';
 import { MapPin, Layers, Activity, AlertCircle, CheckCircle, Clock, Home, Building2, Droplet, Stethoscope, GraduationCap, Sprout, Shield, Search, Filter, Download, Users, TrendingUp, Navigation, ZoomIn, ZoomOut, Maximize2, X, Info, ExternalLink } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default markers in react-leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom icons for different statuses
+const createCustomIcon = (color) => {
+  return new L.DivIcon({
+    html: `
+      <div style="
+        background-color: ${color};
+        width: 24px;
+        height: 24px;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background-color: ${color};
+          animation: pulse 2s infinite;
+        "></div>
+      </div>
+      <style>
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          70% { transform: scale(2.5); opacity: 0; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
+      </style>
+    `,
+    className: 'custom-marker',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
+
+// Component to handle map view changes
+const MapController = ({ center, zoom, selectedProject }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      map.setView([selectedProject.lat, selectedProject.lng], 14);
+    }
+  }, [selectedProject, map]);
+
+  return null;
+};
 
 const KaryamitraGIS = () => {
   const [activePage, setActivePage] = useState('overview');
@@ -585,6 +79,7 @@ const KaryamitraGIS = () => {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [recentActions, setRecentActions] = useState([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Show notification
   const showNotification = (message, type = 'info') => {
@@ -1305,7 +800,7 @@ const KaryamitraGIS = () => {
   );
 
   const MapPage = () => (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       <Notification />
       <ProjectDetailModal />
       
@@ -1352,7 +847,7 @@ const KaryamitraGIS = () => {
 
       <div className="flex h-[calc(100vh-89px)]">
         {/* Sidebar */}
-        <div className="w-96 bg-white shadow-lg overflow-y-auto border-r">
+        <div className={`w-96 bg-white shadow-lg overflow-y-auto border-r transition-all ${isFullscreen ? 'hidden' : 'block'}`}>
           <div className="p-6">
             {/* Search and Filters */}
             <div className="space-y-4 mb-6">
@@ -1525,169 +1020,88 @@ const KaryamitraGIS = () => {
           </div>
         </div>
 
-        {/* Map Area - Simulated */}
-        <div className="flex-1 relative bg-gradient-to-br from-blue-50 to-indigo-100">
-          {/* Map Grid Background */}
-          <div 
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `
-                linear-gradient(to right, #cbd5e1 1px, transparent 1px),
-                linear-gradient(to bottom, #cbd5e1 1px, transparent 1px)
-              `,
-              backgroundSize: '40px 40px'
-            }}
-          />
+        {/* Map Area */}
+        <div className={`flex-1 relative ${isFullscreen ? 'w-full' : ''}`}>
+          <MapContainer
+            center={mapCenter}
+            zoom={mapZoom}
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={false}
+          >
+            <MapController center={mapCenter} zoom={mapZoom} selectedProject={selectedProject} />
+            
+            {/* Tile Layer with different options */}
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            
+            {/* Alternative satellite view */}
+            {/* <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            /> */}
 
-          {/* Map Content */}
-          <div className="absolute inset-0 flex items-center justify-center p-8">
-            <div className="w-full h-full max-w-6xl bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-white/60 shadow-2xl overflow-hidden relative">
-              {/* Map Header */}
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 z-10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MapPin size={20} />
-                  <span className="font-semibold">Karnataka - Bangalore Region</span>
-                  <span className="text-sm opacity-75">Lat: {mapCenter[0].toFixed(4)}, Lng: {mapCenter[1].toFixed(4)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Zoom: {mapZoom}</span>
-                </div>
-              </div>
-
-              {/* Simulated Map Area with Projects */}
-              <div className="absolute inset-0 top-12">
-                <div className="relative w-full h-full bg-gradient-to-br from-green-100 via-blue-100 to-indigo-100">
-                  {/* Project Markers */}
-                  {filteredProjects.map((project, index) => {
-                    // Calculate position based on lat/lng (simplified visualization)
-                    const xPos = ((project.lng - 77.4) / 0.4) * 100;
-                    const yPos = ((13.2 - project.lat) / 0.4) * 100;
+            {/* Project Markers */}
+            {filteredProjects.map(project => (
+              <Marker
+                key={project.id}
+                position={[project.lat, project.lng]}
+                icon={createCustomIcon(getStatusColor(project.status))}
+                eventHandlers={{
+                  click: () => handleProjectClick(project),
+                }}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[250px]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: getStatusColor(project.status) }}
+                      />
+                      <span className="font-bold text-gray-800 text-sm">{project.name}</span>
+                    </div>
+                    <p className="text-gray-600 text-xs mb-3">{project.description}</p>
                     
-                    return (
-                      <div
-                        key={project.id}
-                        className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                        style={{
-                          left: `${Math.max(10, Math.min(90, xPos))}%`,
-                          top: `${Math.max(10, Math.min(90, yPos))}%`
-                        }}
-                        onClick={() => handleProjectClick(project)}
-                      >
-                        {/* Marker Pin */}
-                        <div className="relative">
-                          <div
-                            className="w-6 h-6 rounded-full border-3 border-white shadow-lg animate-pulse"
-                            style={{ backgroundColor: getStatusColor(project.status) }}
-                          />
-                          <div
-                            className="absolute top-0 left-0 w-6 h-6 rounded-full opacity-30 animate-ping"
-                            style={{ backgroundColor: getStatusColor(project.status) }}
-                          />
-                        </div>
-
-                        {/* Hover Popup */}
-                        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
-                          <div className="bg-white rounded-lg shadow-xl p-3 min-w-[200px] border-2" style={{ borderColor: getStatusColor(project.status) }}>
-                            <h4 className="font-bold text-sm text-gray-800 mb-2">{project.name}</h4>
-                            <div className="space-y-1 text-xs text-gray-600">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getStatusColor(project.status) }} />
-                                <span className="capitalize font-medium">{getStatusText(project.status)}</span>
-                              </div>
-                              <div><strong>Progress:</strong> {project.progress}%</div>
-                              <div><strong>Budget:</strong> {project.budget}</div>
-                            </div>
-                            <div className="mt-2 text-xs text-blue-600 font-medium">
-                              Click for details →
-                            </div>
-                          </div>
-                        </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Status:</span>
+                        <span className="font-medium capitalize">{getStatusText(project.status)}</span>
                       </div>
-                    );
-                  })}
-
-                  {/* Selected Project Detail Card */}
-                  {selectedProject && (
-                    <div className="absolute top-4 right-4 bg-white rounded-xl shadow-2xl p-6 max-w-sm border-2 z-30" style={{ borderColor: getStatusColor(selectedProject.status) }}>
-                      <button
-                        onClick={() => setSelectedProject(null)}
-                        className="absolute top-2 right-2 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
-                      >
-                        ×
-                      </button>
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: getStatusColor(selectedProject.status) }} />
-                          <span className="text-xs font-bold uppercase" style={{ color: getStatusColor(selectedProject.status) }}>
-                            {getStatusText(selectedProject.status)}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-lg text-gray-800">{selectedProject.name}</h3>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Progress:</span>
+                        <span className="font-medium">{project.progress}%</span>
                       </div>
-                      
-                      <div className="space-y-3 text-sm">
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1">Description</div>
-                          <p className="text-gray-700 leading-relaxed">{selectedProject.description}</p>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-gray-50 rounded-lg p-2">
-                            <div className="text-gray-500 text-xs mb-1">Budget</div>
-                            <div className="font-bold text-gray-800">{selectedProject.budget}</div>
-                          </div>
-                          <div className="bg-gray-50 rounded-lg p-2">
-                            <div className="text-gray-500 text-xs mb-1">Progress</div>
-                            <div className="font-bold text-gray-800">{selectedProject.progress}%</div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1">Project Officer</div>
-                          <div className="font-semibold text-gray-800">{selectedProject.officer}</div>
-                        </div>
-
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1">Timeline</div>
-                          <div className="text-gray-700 text-xs">
-                            <span className="font-medium">Start:</span> {new Date(selectedProject.startDate).toLocaleDateString('en-IN')}<br/>
-                            <span className="font-medium">End:</span> {new Date(selectedProject.endDate).toLocaleDateString('en-IN')}
-                          </div>
-                        </div>
-
-                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                          <div
-                            className="h-3 rounded-full transition-all"
-                            style={{
-                              width: `${selectedProject.progress}%`,
-                              backgroundColor: getStatusColor(selectedProject.status)
-                            }}
-                          />
-                        </div>
-
-                        <div className="pt-2 flex gap-2">
-                          <button 
-                            onClick={() => {
-                              // Already viewing details in modal
-                            }}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
-                          >
-                            View Full Details
-                          </button>
-                          <button className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">
-                            Report Issue
-                          </button>
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Budget:</span>
+                        <span className="font-medium">{project.budget}</span>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+                    
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-3 overflow-hidden">
+                      <div 
+                        className="h-2 rounded-full transition-all"
+                        style={{
+                          width: `${project.progress}%`,
+                          backgroundColor: getStatusColor(project.status)
+                        }}
+                      />
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleProjectClick(project)}
+                      className="w-full mt-3 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
 
           {/* Legend */}
-          <div className="absolute bottom-6 left-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-20">
+          <div className="absolute bottom-6 left-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-[1000]">
             <h4 className="font-bold text-sm mb-3 text-gray-800 flex items-center gap-2">
               <Activity size={16} />
               Project Status Legend
@@ -1718,7 +1132,7 @@ const KaryamitraGIS = () => {
           </div>
 
           {/* Map Controls */}
-          <div className="absolute top-6 right-6 bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-20">
+          <div className="absolute top-6 right-6 bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[1000]">
             <div className="p-2 space-y-2">
               <button 
                 className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow transform hover:scale-105"
@@ -1734,20 +1148,14 @@ const KaryamitraGIS = () => {
               </button>
               <button 
                 className="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition border-2 border-gray-300 transform hover:scale-105"
-                onClick={() => {
-                  setMapZoom(Math.min(18, mapZoom + 1));
-                  showNotification(`Zoomed in to ${mapZoom + 1}`, 'info');
-                }}
+                onClick={() => setMapZoom(Math.min(18, mapZoom + 1))}
                 title="Zoom In"
               >
                 <ZoomIn size={20} />
               </button>
               <button 
                 className="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition border-2 border-gray-300 transform hover:scale-105"
-                onClick={() => {
-                  setMapZoom(Math.max(8, mapZoom - 1));
-                  showNotification(`Zoomed out to ${mapZoom - 1}`, 'info');
-                }}
+                onClick={() => setMapZoom(Math.max(8, mapZoom - 1))}
                 title="Zoom Out"
               >
                 <ZoomOut size={20} />
@@ -1755,7 +1163,10 @@ const KaryamitraGIS = () => {
               <button 
                 className="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition border-2 border-gray-300 transform hover:scale-105"
                 title="Fullscreen"
-                onClick={() => showNotification('Fullscreen mode activated', 'info')}
+                onClick={() => {
+                  setIsFullscreen(!isFullscreen);
+                  showNotification(isFullscreen ? 'Exited fullscreen' : 'Entered fullscreen', 'info');
+                }}
               >
                 <Maximize2 size={20} />
               </button>
@@ -1763,7 +1174,7 @@ const KaryamitraGIS = () => {
           </div>
 
           {/* Quick Stats Overlay */}
-          <div className="absolute bottom-6 right-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-20">
+          <div className="absolute bottom-6 right-6 bg-white rounded-xl shadow-2xl p-4 border-2 border-gray-200 z-[1000]">
             <h4 className="font-bold text-sm mb-3 text-gray-800">Quick Statistics</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between gap-6">
