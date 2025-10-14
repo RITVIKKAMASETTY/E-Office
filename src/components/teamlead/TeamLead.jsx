@@ -14,11 +14,14 @@ const TeamLeadDashboard = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadMessage, setUploadMessage] = useState('');
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [expandedSubTasks, setExpandedSubTasks] = useState({});
   const [authError, setAuthError] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [taskDocuments, setTaskDocuments] = useState({});
+  const [documentDescription, setDocumentDescription] = useState('');
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
 
   const [newTask, setNewTask] = useState({
     title: '',
@@ -269,59 +272,76 @@ const TeamLeadDashboard = () => {
     }
   };
 
-  const uploadSubTaskDocument = async (subTaskId, file) => {
+  const uploadSubTaskDocument = async (subTaskId, file, description) => {
+  try {
+    const headers = getAuthHeaders();
+    if (!headers) return;
+
+    setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
+
+    const pinataResult = await uploadToPinata(file);
+    if (!pinataResult) throw new Error('Pinata upload failed');
+
+    // Construct full Pinata gateway URL
+    const pinataUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.ipfsHash}`;
+
+    setUploadProgress(prev => ({ ...prev, [file.name]: 50 }));
+
+    const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        task: subTaskId,
+        file: pinataUrl, // ✅ Send full URL instead of file name
+        description: description || '',
+      }),
+    });
+
+    console.log('Upload response:', response.status, response.statusText);
+
+    // Debug logging
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      setUploadProgress(prev => ({ ...prev, [file.name]: 10 }));
-
-      const pinataResult = await uploadToPinata(file);
-      if (!pinataResult) throw new Error('Pinata upload failed');
-
-      setUploadProgress(prev => ({ ...prev, [file.name]: 50 }));
-
-      const response = await fetch(`${API_BASE_URL}/sub-tasks/subtask-documents/`, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-          sub_task: subTaskId,
-          name: pinataResult.fileName,
-          ipfs_hash: pinataResult.ipfsHash,
-          file_size: pinataResult.fileSize,
-        })
-      });
-
-      if (handleAuthError(response)) {
-        setUploadProgress(prev => {
-          const updated = { ...prev };
-          delete updated[file.name];
-          return updated;
-        });
-        return;
-      }
-
-      if (response.ok) {
-        setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
-        setTimeout(() => setUploadProgress(prev => {
-          const updated = { ...prev };
-          delete updated[file.name];
-          return updated;
-        }), 2000);
-        
-        const docs = await fetchSubTaskDocuments(subTaskId);
-        setDocuments(docs);
-        return await response.json();
-      }
+      const data = await response.json();
+      console.log('Upload response data:', data);
     } catch (error) {
-      console.error('Error uploading document:', error);
+      console.error('Failed to parse JSON response:', error);
+      const text = await response.text();
+      console.log('Raw response text:', text);
+    }
+
+    if (handleAuthError(response)) {
       setUploadProgress(prev => {
         const updated = { ...prev };
         delete updated[file.name];
         return updated;
       });
+      return;
     }
-  };
+
+    if (response.ok) {
+      setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+      setTimeout(() => setUploadProgress(prev => {
+        const updated = { ...prev };
+        delete updated[file.name];
+        return updated;
+      }), 2000);
+
+      const docs = await fetchSubTaskDocuments(subTaskId);
+      setDocuments(docs);
+      setDocumentDescription('');
+      setShowDocumentUpload(false);
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    setUploadProgress(prev => {
+      const updated = { ...prev };
+      delete updated[file.name];
+      return updated;
+    });
+  }
+};
+
 
   const uploadTaskDocument = async (taskId, file) => {
     try {
@@ -456,7 +476,7 @@ const TeamLeadDashboard = () => {
     
     for (const file of files) {
       if (type === 'subtask') {
-        await uploadSubTaskDocument(id, file);
+        await uploadSubTaskDocument(id, file, documentDescription);
       } else {
         await uploadTaskDocument(id, file);
       }
@@ -572,18 +592,48 @@ const TeamLeadDashboard = () => {
                         </div>
                         
                         {expandedSubTasks[subTask.id] && (
-                          <div className="bg-gray-50 p-4 border-t">
-                            <label className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
-                              <Upload className="w-4 h-4 mr-2" />
-                              Upload Document
-                              <input
-                                type="file"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, 'subtask', subTask.id)}
-                                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-                              />
-                            </label>
+                          <div className="bg-gray-50 p-4 border-t space-y-3">
+                            {!showDocumentUpload ? (
+                              <button
+                                onClick={() => setShowDocumentUpload(true)}
+                                className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Upload Document
+                              </button>
+                            ) : (
+                              <div className="space-y-3">
+                                <textarea
+                                  placeholder="Enter document description..."
+                                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  rows="2"
+                                  value={documentDescription}
+                                  onChange={(e) => setDocumentDescription(e.target.value)}
+                                />
+                                <div className="flex gap-2">
+                                  <label className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Choose File
+                                    <input
+                                      type="file"
+                                      multiple
+                                      className="hidden"
+                                      onChange={(e) => handleFileUpload(e, 'subtask', subTask.id)}
+                                      accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                                    />
+                                  </label>
+                                  <button
+                                    onClick={() => {
+                                      setShowDocumentUpload(false);
+                                      setDocumentDescription('');
+                                    }}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Download, Trash2, FileText, Plus, AlertCircle, CheckCircle, Clock, Settings } from 'lucide-react';
+import { Upload, Download, Trash2, FileText, Plus, AlertCircle, CheckCircle, Clock, Settings, LogOut, User } from 'lucide-react';
 import empService from '../../services/empservice';
 
 const EmployeeDashboard = () => {
@@ -16,7 +16,7 @@ const EmployeeDashboard = () => {
   });
   const [filterStatus, setFilterStatus] = useState('all');
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [previewDoc, setPreviewDoc] = useState(null);
+  const [userData, setUserData] = useState(null);
 
   const colors = {
     primary: '#004A9F',
@@ -24,6 +24,39 @@ const EmployeeDashboard = () => {
     background: '#F5F7FA',
     accent: '#FACC15',
     text: '#1F2937',
+  };
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const userDataStr = localStorage.getItem('userData');
+      
+      if (!token || !userDataStr) {
+        console.error('Missing authentication data');
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const parsedUser = JSON.parse(userDataStr);
+        setUserData(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        window.location.href = '/login';
+      }
+    };
+    checkAuth();
+  }, []);
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+    localStorage.removeItem('department');
+    window.location.href = '/login';
   };
 
   // Fetch employee tasks
@@ -53,8 +86,6 @@ const EmployeeDashboard = () => {
     }
   }, [tasks.length]);
 
-  
-
   const fetchDocuments = async (taskId) => {
     try {
       const data = await empService.getDocumentsByTask(taskId);
@@ -63,8 +94,6 @@ const EmployeeDashboard = () => {
       console.error('Failed to fetch documents:', err);
     }
   };
-
-  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -141,7 +170,28 @@ const EmployeeDashboard = () => {
   };
 
   const handlePreviewDocument = (fileUrl, fileName) => {
-    setPreviewDoc({ fileUrl, fileName });
+    console.log('Opening document:', fileUrl);
+    
+    // Validate URL
+    if (!fileUrl || fileUrl.trim() === '') {
+      setError('Invalid document URL');
+      return;
+    }
+
+    // Ensure URL is properly formatted
+    const url = fileUrl.startsWith('http') ? fileUrl : `https://${fileUrl}`;
+    
+    // Open document in new tab
+    // Create a temporary anchor element to handle the navigation
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    
+    // Append to body, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getStatusBadge = (status) => {
@@ -197,7 +247,7 @@ const EmployeeDashboard = () => {
         padding: '24px',
       }}
     >
-      {/* Header */}
+      {/* Header with Logout */}
       <div
         style={{
           marginBottom: '32px',
@@ -214,6 +264,52 @@ const EmployeeDashboard = () => {
             Track and manage your assigned tasks
           </p>
         </div>
+
+        {userData && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#F3F4F6',
+                borderRadius: '6px',
+              }}
+            >
+              <User size={16} color={colors.primary} />
+              <span style={{ fontSize: '14px', fontWeight: '600', color: colors.text }}>
+                {userData.name || userData.email || userData.username}
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                backgroundColor: '#FEE2E2',
+                color: '#DC2626',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '600',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseOver={(e) => {
+                e.target.style.backgroundColor = '#FCA5A5';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.backgroundColor = '#FEE2E2';
+              }}
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Alert Messages */}
@@ -439,7 +535,7 @@ const EmployeeDashboard = () => {
                           }}
                         >
                           <FileText size={14} />
-                          Preview
+                          View
                         </button>
                       </div>
                     ))}
@@ -611,73 +707,6 @@ const EmployeeDashboard = () => {
               >
                 {loading ? 'Uploading...' : 'Upload Document'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Modal */}
-      {previewDoc && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: '1000',
-          }}
-          onClick={() => setPreviewDoc(null)}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '90%',
-              maxHeight: '90%',
-              width: '900px',
-              height: '600px',
-              boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ color: colors.primary, fontSize: '18px', fontWeight: '700', margin: '0' }}>
-                {previewDoc.fileName}
-              </h3>
-              <button
-                onClick={() => setPreviewDoc(null)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#F3F4F6',
-                  color: colors.text,
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                }}
-              >
-                Close
-              </button>
-            </div>
-            <div style={{ flex: '1', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-              <iframe
-                src={previewDoc.fileUrl}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                }}
-                title="Document Preview"
-              />
             </div>
           </div>
         </div>
