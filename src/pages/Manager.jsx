@@ -24,6 +24,7 @@ const ManagerDashboard = () => {
   const [employees, setEmployees] = useState([]);
   const [teams, setTeams] = useState([]);
 
+
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -394,8 +395,9 @@ const ManagerDashboard = () => {
       }
 
       const payload = {
-        task: task.title,
+        task: task.id,
         file: `https://gateway.pinata.cloud/ipfs/${pinataResult.ipfsHash}`,
+        title: pinataResult.fileName,
         description: pinataResult.fileName
       };
       
@@ -471,8 +473,9 @@ const ManagerDashboard = () => {
 
       const subTask = subTasks.find(st => st.id === subTaskId);
       const payload = {
-        task: subTask?.title,
-        file: pinataResult.fileName,
+        task: subTask?.id,
+        file: `https://gateway.pinata.cloud/ipfs/${pinataResult.ipfsHash}`,
+        title: pinataResult.fileName,
         description: `Document for ${subTask?.title}`
       };
       
@@ -636,6 +639,13 @@ const ManagerDashboard = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold text-[#1F2937]">Task Management</h2>
+              <button
+                onClick={() => setShowCreateTask(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#004A9F] text-white rounded-lg hover:bg-[#003875] transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Task</span>
+              </button>
             </div>
 
             {loading ? (
@@ -718,15 +728,15 @@ const ManagerDashboard = () => {
                         )}
                         
                         {/* Task Documents */}
-                        {taskDocuments.filter(doc => doc.task === task.title).length > 0 && (
+                        {taskDocuments.filter(doc => doc.task === task.id).length > 0 && (
                           <div className="mt-4 pt-4 border-t">
                             <h5 className="font-medium text-[#1F2937] mb-2">Task Documents</h5>
                             <div className="grid grid-cols-2 gap-2">
-                              {taskDocuments.filter(doc => doc.task === task.id || doc.task === task.title).map((doc) => {
+                              {taskDocuments.filter(doc => doc.task === task.id).map((doc) => {
                                 console.log('Document data:', doc);
                                 const fileUrl = doc.file?.startsWith('http') ? doc.file : 
                                                doc.ipfs_hash ? `https://gateway.pinata.cloud/ipfs/${doc.ipfs_hash}` : '#';
-                                const fileName = doc.title || doc.description || doc.file?.split('/').pop() || 'Document';
+                                const fileName = doc.title || doc.description || 'Document';
                                 
                                 return (
                                 <div key={doc.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
@@ -742,7 +752,7 @@ const ManagerDashboard = () => {
                                       <div className="text-sm font-medium text-blue-600 hover:underline">
                                         {fileName}
                                       </div>
-                                      <div className="text-xs text-gray-500">{doc.description || `Document for ${task.title}`}</div>
+                                      <div className="text-xs text-gray-500">{fileName}</div>
                                       <div className="text-xs text-gray-400">Uploaded: {formatDate(doc.uploaded_at)} by {doc.uploaded_by}</div>
                                       {doc.ipfs_hash && (
                                         <div className="text-xs text-blue-600">Stored on IPFS</div>
